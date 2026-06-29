@@ -80,7 +80,12 @@ function inLabel(depAbs) {
 function mmss(depAbs) {
   let s = Math.floor((depAbs - state.now) / 1000); if (s < 0) s = 0;
   if (s >= 3600) return inLabel(depAbs);
-  return Math.floor(s / 60) + ':' + pad(s % 60);
+  return Math.floor(s / 60) + 'm ' + pad(s % 60) + 's';
+}
+// A departure is "soon" when it's today and leaves within the next 30 minutes.
+function isSoon(depAbs) {
+  const diff = depAbs - state.now;
+  return diff >= 0 && diff < 30 * 60000;
 }
 
 function mix(hex, t) {
@@ -251,15 +256,15 @@ function settingsSheet() {
 
 function tabbar() {
   const t = state.activeTab;
-  return `<div class="tabbar">
-    <button class="tab ${t === 'home' ? 'on' : ''}" data-act="goHome"><div class="ic-home"></div><span class="label">Home</span></button>
-    <button class="tab ${t === 'search' ? 'on' : ''}" data-act="goSearch"><div class="ic-search"></div><span class="label">Search</span></button>
-    <button class="tab ${t === 'saved' ? 'on' : ''}" data-act="goSaved"><div class="ic-star">${t === 'saved' ? '★' : '☆'}</div><span class="label">Saved</span></button>
-  </div>`;
+  return `<nav class="tabbar" aria-label="Primary">
+    <button class="tab ${t === 'home' ? 'on' : ''}" data-act="goHome" ${t === 'home' ? 'aria-current="page"' : ''}><div class="ic-home"></div><span class="label">Home</span></button>
+    <button class="tab ${t === 'search' ? 'on' : ''}" data-act="goSearch" ${t === 'search' ? 'aria-current="page"' : ''}><div class="ic-search"></div><span class="label">Search</span></button>
+    <button class="tab ${t === 'saved' ? 'on' : ''}" data-act="goSaved" ${t === 'saved' ? 'aria-current="page"' : ''}><div class="ic-star">${t === 'saved' ? '★' : '☆'}</div><span class="label">Saved</span></button>
+  </nav>`;
 }
 
 function depRowHtml(h, o, d) {
-  return `<div class="dep-row" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
+  return `<div class="dep-row" data-act="openDetail" role="button" tabindex="0" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
     <div class="l"><span class="time">${fmtTime(h.depAbs)}</span><span class="sub">arr ${fmtTime(h.arrAbs)}</span></div>
     <span class="in" data-live="in" data-dep="${h.depAbs}">${inLabel(h.depAbs)}</span>
   </div>`;
@@ -287,7 +292,7 @@ function cardHtml(trip) {
   const soonest = deps[0];
   const serviceDone = soonest.depAbs >= endOfToday();
   if (serviceDone) {
-    return `<div class="card" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${soonest.depAbs}">${head}
+    return `<div class="card" data-act="openDetail" role="button" tabindex="0" data-o="${o}" data-d="${d}" data-dep="${soonest.depAbs}">${head}
       <div class="svc-done"><div class="ic"><div class="moon"></div></div>
         <div><div class="t">Service done for today</div>
         <div class="s">Next train · <span style="color:var(--text);font-weight:600">${fmtTime(soonest.depAbs)}</span></div></div></div></div>`;
@@ -295,7 +300,7 @@ function cardHtml(trip) {
 
   const more = deps.slice(1, expanded ? 5 : 3);
   return `<div class="card" data-act="toggleCard" data-key="${key}">${head}
-    <div class="hero-row" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${soonest.depAbs}">
+    <div class="hero-row" data-act="openDetail" role="button" tabindex="0" data-o="${o}" data-d="${d}" data-dep="${soonest.depAbs}">
       <div class="hero-time">${fmtTime(soonest.depAbs)}</div>
       <div class="hero-meta">
         <div class="in-pill" data-live="in" data-dep="${soonest.depAbs}">${inLabel(soonest.depAbs)}</div>
@@ -304,7 +309,7 @@ function cardHtml(trip) {
     </div>
     <div class="dep-list">
       ${more.map((h) => depRowHtml(h, o, d)).join('')}
-      <div class="expand">${expanded ? 'Show less ▴' : 'Show more departures ▾'}</div>
+      <div class="expand" data-act="toggleCard" data-key="${key}" role="button" tabindex="0">${expanded ? 'Show less ▴' : 'Show more departures ▾'}</div>
     </div>
   </div>`;
 }
@@ -326,7 +331,7 @@ function pinCardHtml(p) {
       <div class="svc-done"><div class="ic"><div class="moon"></div></div>
         <div><div class="t">No upcoming run</div><div class="s">This departure isn't in the current schedule</div></div></div></div>`;
   }
-  return `<div class="card pin-card" data-act="openDetail" data-o="${p.o}" data-d="${p.d}" data-dep="${occ.depAbs}">
+  return `<div class="card pin-card" data-act="openDetail" role="button" tabindex="0" data-o="${p.o}" data-d="${p.d}" data-dep="${occ.depAbs}">
     <div class="eyebrow-pin">Pinned departure · ${dayTypeLabel(p.dayType)}</div>${head}
     <div class="hero-row">
       <div class="hero-time">${fmtTime(occ.depAbs)}</div>
@@ -399,7 +404,7 @@ function freshnessBanner() {
 }
 
 function stRowHtml(s, dotColor, rightCode) {
-  return `<div class="st-row" data-act="pickStation" data-id="${s.id}">
+  return `<div class="st-row" data-act="pickStation" role="button" tabindex="0" data-id="${s.id}">
     <div class="dot" style="background:${dotColor}"></div>
     <div class="name">${esc(s.name)}</div><span class="code">${rightCode}</span></div>`;
 }
@@ -446,13 +451,14 @@ function searchScreen() {
   const tomorrowStr = isoDate(tmr);
   const recents = state.recents.map((r) => {
     const code = commonLine(r.o, r.d);
-    return `<div class="recent" data-act="runRecent" data-o="${r.o}" data-d="${r.d}">
+    return `<div class="recent" data-act="runRecent" role="button" tabindex="0" data-o="${r.o}" data-d="${r.d}">
       <span class="ic">↺</span>
       <div class="od">${esc(shortName(r.o))} <span class="arr">→</span> ${esc(shortName(r.d))}</div>
       <span class="badge sm" style="background:${lineColor(code)}">${code}</span>
       <button class="recent-x" data-act="removeRecent" data-o="${r.o}" data-d="${r.d}" aria-label="Remove recent search">×</button></div>`;
   }).join('');
-  const canSearch = state.origin && state.dest;
+  const canSearch = state.origin && state.dest && state.origin !== state.dest;
+  const sameStation = state.origin && state.dest && state.origin === state.dest;
   const picker = state.picker ? `<div class="picker">
     <div class="picker-head"><button class="back" data-act="closePicker" aria-label="Back">←</button>
       <div class="t">${state.picker === 'origin' ? 'From' : 'To'}</div></div>
@@ -466,12 +472,12 @@ function searchScreen() {
   return `<div class="screen"><div class="scroll" data-scroll="search">
     <div class="head"><div class="title">Plan a trip</div></div>
     <div class="od-group">
-      <div class="od-field" data-act="openOrigin">
+      <div class="od-field" data-act="openOrigin" role="button" tabindex="0">
         <div class="od-marker from"></div>
         <div><div class="lbl">From</div><div class="val ${state.origin ? '' : 'empty'}">${state.origin ? esc(DATA.byId[state.origin].name) : 'Choose station'}</div></div>
       </div>
       <div class="od-divider"></div>
-      <div class="od-field" data-act="openDest">
+      <div class="od-field" data-act="openDest" role="button" tabindex="0">
         <div class="od-marker to"></div>
         <div><div class="lbl">To</div><div class="val ${state.dest ? '' : 'empty'}">${state.dest ? esc(DATA.byId[state.dest].name) : 'Choose station'}</div></div>
       </div>
@@ -487,6 +493,7 @@ function searchScreen() {
       <button class="now-chip ${(state.dateStr === tomorrowStr) ? 'on' : ''}" data-act="setTomorrow">Tomorrow</button>
     </div>
     <button class="search-btn" data-act="runSearch" ${canSearch ? '' : 'disabled'}>Search trips</button>
+    ${sameStation ? `<div class="search-hint">Origin and destination are the same — pick different stations.</div>` : ''}
     ${recents ? `<div class="section-label">Recent</div>${recents}` : ''}
   </div>${picker}</div>`;
 }
@@ -525,7 +532,7 @@ function resultsScreen() {
       const dayKey = startOfDay(h.depAbs).getTime();
       const divider = (prevDay !== null && dayKey !== prevDay) ? `<div class="res-day">${dayLabel(h.depAbs)}</div>` : '';
       prevDay = dayKey;
-      return divider + `<div class="res-row ${i < 2 ? 'soon' : ''}" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
+      return divider + `<div class="res-row ${isSoon(h.depAbs) ? 'soon' : ''}" data-act="openDetail" role="button" tabindex="0" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
         <div class="bar" style="background:${lineDisp(h.line)}"></div>
         <div class="mid">
           <div class="times"><span class="dep">${fmtTime(h.depAbs)}</span><span class="to">→</span><span class="arr">${fmtTime(h.arrAbs)}</span></div>
@@ -580,7 +587,8 @@ function detailScreen() {
       <button class="route-save ${pinned ? 'on' : ''}" data-act="togglePin" ${pinData} aria-pressed="${pinned}" aria-label="${pinned ? 'Unpin departure' : 'Pin departure'}"><span class="ic">${pinned ? '★' : '☆'}</span>${pinned ? 'Pinned' : 'Pin'}</button></div>
     <div class="detail-scroll" data-scroll="detail">
       <div class="detail-card">
-        <div class="detail-line"><span class="badge sm" style="background:${lineColor(code)}">${code}</span><span class="nm">${esc(lineName(code))}</span></div>
+        <div class="detail-line"><span class="badge sm" style="background:${lineColor(code)}">${code}</span><span class="nm">${esc(lineName(code))}</span>
+          <span class="detail-in" data-live="in" data-dep="${h.depAbs}">${inLabel(h.depAbs)}</span></div>
         <div class="detail-od">
           <div><div class="t">${fmtTime(h.depAbs)}</div><div class="s">${esc(shortName(o))}</div></div>
           <div class="mid"><div class="dur">${h.duration} min</div><div class="track"><div class="tri">▶</div></div></div>
@@ -610,7 +618,7 @@ function savedScreen() {
       const code = deps[0] ? deps[0].line : commonLine(t.o, t.d);
       const nx = deps[0] ? `Next departs ${fmtTime(deps[0].depAbs)} · <span class="in" data-live="in" data-dep="${deps[0].depAbs}">${inLabel(deps[0].depAbs)}</span>` : 'No upcoming service';
       const dep = deps[0] ? deps[0].depAbs : 0;
-      return `<div class="saved-row" data-act="openDetail" data-o="${t.o}" data-d="${t.d}" data-dep="${dep}">
+      return `<div class="saved-row" data-act="openDetail" role="button" tabindex="0" data-o="${t.o}" data-d="${t.d}" data-dep="${dep}">
         <div class="bar" style="background:${lineDisp(code)}"></div>
         <div class="mid">
           <div class="od"><span class="badge sm" style="background:${lineColor(code)}">${code}</span>
@@ -627,7 +635,7 @@ function savedScreen() {
       const nx = occ ? `Departs ${fmtTime(occ.depAbs)} · <span class="in" data-live="in" data-dep="${occ.depAbs}">${inLabel(occ.depAbs)}</span>` : 'No upcoming run';
       const dep = occ ? occ.depAbs : 0;
       const pinData = `data-o="${p.o}" data-d="${p.d}" data-line="${p.line}" data-daytype="${p.dayType}" data-depmin="${p.depMin}"`;
-      return `<div class="saved-row" data-act="openDetail" data-o="${p.o}" data-d="${p.d}" data-dep="${dep}">
+      return `<div class="saved-row" data-act="openDetail" role="button" tabindex="0" data-o="${p.o}" data-d="${p.d}" data-dep="${dep}">
         <div class="bar" style="background:${lineDisp(p.line)}"></div>
         <div class="mid">
           <div class="od"><span class="badge sm" style="background:${lineColor(p.line)}">${p.line}</span>
@@ -721,7 +729,11 @@ const handlers = {
   pickStation(el) { const id = el.dataset.id; if (state.picker === 'origin') state.origin = id; else state.dest = id; state.picker = null; render(); },
   swap() { const o = state.origin; state.origin = state.dest; state.dest = o; render(); },
   leaveNow() { const d = new Date(); state.leaveNow = true; state.dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); state.timeStr = pad(d.getHours()) + ':' + pad(d.getMinutes()); render(); },
-  runSearch() { if (!state.origin || !state.dest) { toast('Pick origin & destination'); return; } pushRecent(state.origin, state.dest); state.screen = 'results'; state.activeTab = 'search'; render(); },
+  runSearch() {
+    if (!state.origin || !state.dest) { toast('Pick origin & destination'); return; }
+    if (state.origin === state.dest) { toast('Pick two different stations'); return; }
+    pushRecent(state.origin, state.dest); state.screen = 'results'; state.activeTab = 'search'; render();
+  },
   runRecent(el) { state.origin = el.dataset.o; state.dest = el.dataset.d; state.leaveNow = true; pushRecent(el.dataset.o, el.dataset.d); state.screen = 'results'; state.activeTab = 'search'; render(); },
   toggleSaveRoute(el) { toggleSaveTrip(el.dataset.o, el.dataset.d); },
   togglePin(el) { togglePin(el.dataset.o, el.dataset.d, el.dataset.line, el.dataset.daytype, +el.dataset.depmin); },
@@ -736,6 +748,15 @@ function bind() {
     const el = e.target.closest('[data-act]'); if (!el || !app.contains(el)) return;
     const act = el.dataset.act;
     if (handlers[act]) { e.preventDefault(); e.stopPropagation(); handlers[act](el, e); }
+  });
+  // Enter/Space activate non-button controls (role="button" rows/cards).
+  app.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    const el = e.target.closest('[data-act]'); if (!el || !app.contains(el)) return;
+    if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'A') return;
+    if (el.getAttribute('tabindex') === null) return;
+    const act = el.dataset.act;
+    if (handlers[act]) { e.preventDefault(); handlers[act](el, e); }
   });
   app.addEventListener('input', (e) => {
     const el = e.target.closest('[data-act]'); if (!el) return;
@@ -754,7 +775,7 @@ function bind() {
 
 /* ---- boot ---------------------------------------------------------------- */
 
-function liveScreen() { return state.screen === 'home' || state.screen === 'results' || state.screen === 'saved'; }
+function liveScreen() { return state.screen === 'home' || state.screen === 'results' || state.screen === 'saved' || state.screen === 'detail'; }
 
 // Update only the time-dependent text each second (no DOM rebuild = no flashing).
 // Trigger a single full re-render when a shown departure rolls past its minute,

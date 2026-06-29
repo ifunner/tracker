@@ -1,5 +1,5 @@
 /* Tracker service worker — offline app shell + fresh schedule data. */
-const CACHE = 'tracker-v2';
+const CACHE = 'tracker-v3';
 const SHELL = [
   '.', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icon.svg', 'icon-maskable.svg', 'icon-192.png', 'icon-512.png', 'icon-180.png',
