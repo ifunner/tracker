@@ -46,6 +46,12 @@ function dayTypeOf(d) { const g = d.getDay(); return g === 0 ? 'sunday' : g === 
 function ymd(d) { return '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); }
 function startOfDay(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d; }
 function endOfToday() { const d = startOfDay(state.now); d.setDate(d.getDate() + 1); return d.getTime(); }
+function dayLabel(ms) {
+  const diff = Math.round((startOfDay(ms).getTime() - startOfDay(state.now).getTime()) / 86400000);
+  if (diff <= 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return new Date(ms).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+}
 
 // Trips that actually run on a given date (handles spring/summer/holiday changes).
 // Dates inside the feed window use their exact schedule variant; dates outside
@@ -508,6 +514,7 @@ function resultsScreen() {
         esc(shortName(o)) + ' and ' + esc(shortName(d)) + ' aren\'t on the same line. Most riders connect at Union Station.'}</div>
       <button class="btn-primary" data-act="goSearch">Edit search</button></div>`;
   } else {
+    let prevDay = null;
     list = `<div class="res-head">Next departures</div>` + deps.map((h, i) => {
       const stopsBetween = h.di - h.oi - 1;
       const stopsLabel = stopsBetween <= 0 ? 'Nonstop' : stopsBetween + ' stops';
@@ -515,7 +522,10 @@ function resultsScreen() {
       const dt = serviceDayType(h.depAbs, depMin);
       const pinned = isPinned(o, d, h.line, dt, depMin);
       const pinData = `data-o="${o}" data-d="${d}" data-line="${h.line}" data-daytype="${dt}" data-depmin="${depMin}"`;
-      return `<div class="res-row ${i < 2 ? 'soon' : ''}" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
+      const dayKey = startOfDay(h.depAbs).getTime();
+      const divider = (prevDay !== null && dayKey !== prevDay) ? `<div class="res-day">${dayLabel(h.depAbs)}</div>` : '';
+      prevDay = dayKey;
+      return divider + `<div class="res-row ${i < 2 ? 'soon' : ''}" data-act="openDetail" data-o="${o}" data-d="${d}" data-dep="${h.depAbs}">
         <div class="bar" style="background:${lineDisp(h.line)}"></div>
         <div class="mid">
           <div class="times"><span class="dep">${fmtTime(h.depAbs)}</span><span class="to">→</span><span class="arr">${fmtTime(h.arrAbs)}</span></div>
@@ -654,7 +664,10 @@ function render() {
     case 'saved': screen = savedScreen(); break;
     default: screen = homeScreen();
   }
-  app.innerHTML = statusbar() + screen + tabbar() + settingsSheet();
+  // results/detail render their own top bar (pushhead); skip the global status
+  // bar there so the time/header isn't shown twice and doesn't overlap.
+  const ownsTopBar = state.screen === 'results' || state.screen === 'detail';
+  app.innerHTML = (ownsTopBar ? '' : statusbar()) + screen + tabbar() + settingsSheet();
 
   app.querySelectorAll('[data-scroll]').forEach((el) => {
     const k = el.getAttribute('data-scroll');
