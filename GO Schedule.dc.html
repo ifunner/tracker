@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --page:#050607; --bg:#0e1113; --surface:#171b1e; --surface-2:#21262a; --line:rgba(255,255,255,.085);
+  --text:#eef1f2; --text-2:#9aa3a8; --text-3:#646e74;
+  --accent:#1aa84e; --font:'Public Sans',system-ui,sans-serif; --num:'Barlow Semi Condensed','Public Sans',sans-serif;
+}
+[data-theme="light"]{
+  --page:#c9cdcf; --bg:#eef0f1; --surface:#ffffff; --surface-2:#eceef0; --line:rgba(0,0,0,.09);
+  --text:#13181b; --text-2:#5a646a; --text-3:#949ca1; --accent:#00853e;
+}
+::-webkit-scrollbar{width:0;height:0;}
+input::placeholder{color:var(--text-3);}
+input[type=date],input[type=time]{color-scheme:dark;}
+[data-theme="light"] input[type=date],[data-theme="light"] input[type=time]{color-scheme:light;}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes toastIn{from{transform:translate(-50%,14px);opacity:0;}to{transform:translate(-50%,0);opacity:1;}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--page);font-family:var(--font);padding:24px;">
+<div style="position:relative;width:390px;height:844px;background:var(--bg);border-radius:46px;box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px var(--line);overflow:hidden;display:flex;flex-direction:column;">
+
+  <div style="height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;">
+    <div style="font-family:var(--num);font-size:15px;font-weight:600;letter-spacing:.4px;color:var(--text);">{{ clock }}</div>
+    <div style="display:flex;align-items:center;gap:11px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.4px;font-family:var(--num);">5G</span>
+      <div style="width:24px;height:12px;border:1.5px solid var(--text-2);border-radius:3px;position:relative;"><div style="position:absolute;top:1.5px;left:1.5px;bottom:1.5px;width:62%;background:var(--text-2);border-radius:1px;"></div></div>
+      <div role="button" onClick="{{ toggleTheme }}" style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface-2);">
+        <sc-if value="{{ isDark }}" hint-placeholder-val="{{ true }}"><div style="width:16px;height:16px;border-radius:50%;box-shadow:inset -5px -2px 0 0 var(--text);"></div></sc-if>
+        <sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}"><div style="width:15px;height:15px;border-radius:50%;background:var(--accent);"></div></sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;">
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 18px 96px;animation:fadeIn .2s ease;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 4px 16px;">
+      <div>
+        <div style="font-size:13px;color:var(--text-2);font-weight:500;">{{ greeting }}</div>
+        <div style="font-family:var(--num);font-size:31px;font-weight:700;color:var(--text);line-height:1.05;letter-spacing:-.3px;">Your trips</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--accent) 16%,transparent);padding:6px 11px;border-radius:999px;margin-top:6px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div>
+        <span style="font-size:11px;font-weight:700;color:var(--accent);">Offline ready</span>
+      </div>
+    </div>
+
+    <sc-if value="{{ showInstall }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--accent) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:16px;padding:13px 14px;margin:0 4px 16px;">
+      <div style="width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;font-family:var(--num);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex:none;letter-spacing:.5px;">GO</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">Install GO Schedule</div><div style="font-size:11px;color:var(--text-2);margin-top:1px;">Add to home screen · works offline</div></div>
+      <div role="button" onClick="{{ dismissInstall }}" style="color:var(--text-3);font-size:20px;cursor:pointer;padding:2px 6px;line-height:1;">×</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ hasSaved }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;gap:3px;background:var(--surface);border:1px solid var(--line);padding:3px;border-radius:11px;width:fit-content;margin:0 4px 16px;">
+      <div role="button" onClick="{{ setVariantA }}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:{{ vABg }};color:{{ vAColor }};">Board</div>
+      <div role="button" onClick="{{ setVariantB }}" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:{{ vBBg }};color:{{ vBColor }};">Rail</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isVariantA }}" hint-placeholder-val="{{ true }}">
+    <sc-for list="{{ savedCards }}" as="card" hint-placeholder-count="2">
+    <div onClick="{{ card.onToggle }}" style="background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 16px 12px;margin-bottom:14px;cursor:pointer;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span style="font-family:var(--num);font-weight:700;font-size:13px;color:#fff;background:{{ card.lineColor }};padding:3px 9px;border-radius:7px;letter-spacing:.6px;flex:none;">{{ card.lineCode }}</span>
+          <div style="font-size:15px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;white-space:nowrap;">{{ card.origin }} <span style="color:var(--text-3);">→</span> {{ card.dest }}</div>
+        </div>
+        <div role="button" onClick="{{ card.onReverse }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"><span style="font-size:17px;color:var(--text-2);">⇅</span></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:12px;">
+        <div style="font-family:var(--num);font-size:46px;font-weight:700;line-height:.82;color:var(--text);letter-spacing:-.5px;">{{ card.soonest.timeLabel }}</div>
+        <div style="padding-bottom:4px;min-width:0;">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:4px 11px;border-radius:999px;font-weight:700;font-size:13px;font-family:var(--num);">{{ card.soonest.inLabel }}</div>
+          <div style="font-size:12px;color:var(--text-2);margin-top:6px;font-family:var(--num);font-weight:500;">{{ card.soonest.mmss }} · arr {{ card.soonest.arrLabel }} · {{ card.soonest.durationLabel }}</div>
+        </div>
+      </div>
+      <div style="margin-top:13px;border-top:1px solid var(--line);padding-top:2px;">
+        <sc-for list="{{ card.more }}" as="dep" hint-placeholder-count="2">
+        <div role="button" onClick="{{ dep.onOpen }}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 2px;cursor:pointer;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:var(--num);font-size:19px;font-weight:600;color:var(--text);">{{ dep.timeLabel }}</span><span style="font-size:12px;color:var(--text-2);">arr {{ dep.arrLabel }}</span></div>
+          <span style="font-size:13px;font-weight:600;color:var(--text-2);font-family:var(--num);">{{ dep.inLabel }}</span>
+        </div>
+        </sc-for>
+        <sc-if value="{{ card.expanded }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ card.extra }}" as="dep" hint-placeholder-count="2">
+        <div role="button" onClick="{{ dep.onOpen }}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 2px;cursor:pointer;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:var(--num);font-size:19px;font-weight:600;color:var(--text);">{{ dep.timeLabel }}</span><span style="font-size:12px;color:var(--text-2);">arr {{ dep.arrLabel }}</span></div>
+          <span style="font-size:13px;font-weight:600;color:var(--text-2);font-family:var(--num);">{{ dep.inLabel }}</span>
+        </div>
+        </sc-for>
+        </sc-if>
+        <div style="text-align:center;font-size:12px;color:var(--text-3);font-weight:700;padding:6px 0 2px;">{{ card.expandLabel }}</div>
+      </div>
+    </div>
+    </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ isVariantB }}" hint-placeholder-val="{{ false }}">
+    <sc-for list="{{ savedCards }}" as="card" hint-placeholder-count="2">
+    <div onClick="{{ card.onToggle }}" style="position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 16px 16px 24px;margin-bottom:14px;overflow:hidden;cursor:pointer;">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:6px;background:{{ card.lineAccent }};"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+          <span style="font-family:var(--num);font-weight:700;font-size:12px;color:#fff;background:{{ card.lineColor }};padding:3px 8px;border-radius:6px;letter-spacing:.6px;flex:none;">{{ card.lineCode }}</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;">{{ card.lineName }}</span>
+        </div>
+        <div role="button" onClick="{{ card.onReverse }}" style="width:32px;height:32px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;"><span style="font-size:16px;color:var(--text-2);">⇅</span></div>
+      </div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;white-space:nowrap;">{{ card.origin }} <span style="color:var(--text-3);">→</span> {{ card.dest }}</div>
+      <div style="font-family:var(--num);font-size:36px;font-weight:700;line-height:.9;color:{{ card.lineAccent }};letter-spacing:-.3px;">{{ card.soonest.inLabel }}</div>
+      <div style="font-size:13px;color:var(--text-2);margin-top:5px;font-family:var(--num);font-weight:500;">Departs {{ card.soonest.timeLabel }} · {{ card.soonest.mmss }}</div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <sc-for list="{{ card.more }}" as="dep" hint-placeholder-count="2">
+        <div role="button" onClick="{{ dep.onOpen }}" style="background:var(--surface-2);border-radius:11px;padding:7px 12px;cursor:pointer;text-align:center;min-width:62px;">
+          <div style="font-family:var(--num);font-size:16px;font-weight:600;color:var(--text);">{{ dep.timeLabel }}</div>
+          <div style="font-size:10px;color:var(--text-3);font-weight:700;margin-top:1px;">{{ dep.inLabel }}</div>
+        </div>
+        </sc-for>
+        <sc-if value="{{ card.expanded }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ card.extra }}" as="dep" hint-placeholder-count="2">
+        <div role="button" onClick="{{ dep.onOpen }}" style="background:var(--surface-2);border-radius:11px;padding:7px 12px;cursor:pointer;text-align:center;min-width:62px;">
+          <div style="font-family:var(--num);font-size:16px;font-weight:600;color:var(--text);">{{ dep.timeLabel }}</div>
+          <div style="font-size:10px;color:var(--text-3);font-weight:700;margin-top:1px;">{{ dep.inLabel }}</div>
+        </div>
+        </sc-for>
+        </sc-if>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text-3);font-weight:700;padding-top:12px;">{{ card.expandLabel }}</div>
+    </div>
+    </sc-for>
+    </sc-if>
+
+    <sc-if value="{{ noSaved }}" hint-placeholder-val="{{ false }}">
+    <div style="text-align:center;padding:54px 20px;">
+      <div style="width:74px;height:74px;border-radius:22px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><span style="font-size:32px;color:var(--accent);">★</span></div>
+      <div style="font-family:var(--num);font-size:23px;font-weight:700;color:var(--text);margin-bottom:9px;">No saved trips yet</div>
+      <div style="font-size:14px;color:var(--text-2);line-height:1.5;max-width:248px;margin:0 auto 22px;">Search a route once and save it. We'll show your next departures the moment you open the app.</div>
+      <div role="button" onClick="{{ goSearch }}" style="display:inline-block;background:var(--accent);color:#fff;padding:14px 26px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;">Find a trip</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ hasSaved }}" hint-placeholder-val="{{ true }}">
+    <div role="button" onClick="{{ goSearch }}" style="width:100%;background:transparent;border:1.5px dashed var(--line);color:var(--text-2);padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;margin-top:2px;">+  Add a trip</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 18px 96px;animation:fadeIn .2s ease;">
+    <div style="padding:8px 4px 18px;"><div style="font-family:var(--num);font-size:31px;font-weight:700;color:var(--text);letter-spacing:-.3px;">Plan a trip</div></div>
+    <div style="position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:4px;">
+      <div role="button" onClick="{{ openOriginPicker }}" style="display:flex;align-items:center;gap:13px;padding:15px 14px;cursor:pointer;">
+        <div style="width:11px;height:11px;border-radius:50%;border:2.5px solid var(--text-3);flex:none;"></div>
+        <div style="flex:1;"><div style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">From</div><div style="font-size:16px;font-weight:600;color:{{ originColor }};margin-top:2px;">{{ originLabel }}</div></div>
+      </div>
+      <div style="height:1px;background:var(--line);margin-left:38px;"></div>
+      <div role="button" onClick="{{ openDestPicker }}" style="display:flex;align-items:center;gap:13px;padding:15px 14px;cursor:pointer;">
+        <div style="width:11px;height:11px;border-radius:3px;background:var(--text-3);flex:none;"></div>
+        <div style="flex:1;"><div style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">To</div><div style="font-size:16px;font-weight:600;color:{{ destColor }};margin-top:2px;">{{ destLabel }}</div></div>
+      </div>
+      <div role="button" onClick="{{ swap }}" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:11px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="color:var(--text-2);font-size:17px;">⇅</span></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <label style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 14px;display:block;cursor:pointer;">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Date</div>
+        <input type="date" value="{{ dateStr }}" onChange="{{ onDate }}" style="background:none;border:none;color:var(--text);font-size:15px;font-weight:600;font-family:var(--font);width:100%;margin-top:3px;outline:none;" />
+      </label>
+      <label style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 14px;display:block;cursor:pointer;">
+        <div style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Time</div>
+        <input type="time" value="{{ timeStr }}" onChange="{{ onTime }}" style="background:none;border:none;color:var(--text);font-size:15px;font-weight:600;font-family:var(--font);width:100%;margin-top:3px;outline:none;" />
+      </label>
+    </div>
+    <div role="button" onClick="{{ setLeaveNow }}" style="display:inline-flex;align-items:center;gap:7px;margin-top:12px;background:{{ nowChipBg }};border:1px solid {{ nowChipBorder }};padding:8px 14px;border-radius:999px;cursor:pointer;"><div style="width:7px;height:7px;border-radius:50%;background:{{ nowChipDot }};"></div><span style="font-size:13px;font-weight:700;color:{{ nowChipColor }};">Leave now</span></div>
+    <div role="button" onClick="{{ runSearch }}" style="width:100%;margin-top:18px;background:var(--accent);color:#fff;padding:16px;border-radius:16px;font-size:16px;font-weight:700;cursor:pointer;text-align:center;opacity:{{ searchOpacity }};">Search trips</div>
+    <div style="margin-top:26px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin:0 4px 6px;">Recent</div>
+      <sc-for list="{{ recents }}" as="r" hint-placeholder-count="3">
+      <div role="button" onClick="{{ r.onRun }}" style="display:flex;align-items:center;gap:13px;padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer;">
+        <span style="font-size:16px;color:var(--text-3);">↺</span>
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;">{{ r.origin }} <span style="color:var(--text-3);font-weight:500;">→</span> {{ r.dest }}</div>
+        <span style="font-family:var(--num);font-weight:700;font-size:11px;color:#fff;background:{{ r.lineColor }};padding:2px 7px;border-radius:6px;letter-spacing:.5px;">{{ r.lineCode }}</span>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:var(--bg);z-index:40;display:flex;flex-direction:column;animation:slideUp .22s ease;">
+    <div style="display:flex;align-items:center;gap:12px;padding:18px 18px 10px;">
+      <div role="button" onClick="{{ closePicker }}" style="font-size:24px;color:var(--text-2);cursor:pointer;line-height:1;">←</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text);">{{ pickerTitle }}</div>
+    </div>
+    <div style="padding:0 18px 12px;">
+      <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search stations" style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--text);font-size:15px;font-family:var(--font);outline:none;" />
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 10px 20px;">
+      <sc-for list="{{ filteredStations }}" as="st" hint-placeholder-count="8">
+      <div role="button" onClick="{{ st.onPick }}" style="display:flex;align-items:center;gap:13px;padding:14px 12px;border-radius:12px;cursor:pointer;">
+        <div style="width:13px;height:13px;border-radius:50%;background:{{ st.dot }};flex:none;"></div>
+        <div style="flex:1;font-size:15px;font-weight:600;color:var(--text);">{{ st.name }}</div>
+        <span style="font-size:11px;font-weight:700;color:var(--text-3);font-family:var(--num);letter-spacing:.5px;">{{ st.code }}</span>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;animation:fadeIn .2s ease;">
+    <div style="flex:none;padding:6px 16px 13px;border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div role="button" onClick="{{ back }}" style="font-size:23px;color:var(--text-2);cursor:pointer;line-height:1;">←</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:18px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;white-space:nowrap;">{{ resOrigin }} <span style="color:var(--text-3);">→</span> {{ resDest }}</div><div style="font-size:12px;color:var(--text-2);margin-top:2px;">{{ resContext }}</div></div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 16px 96px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.7px;margin:0 2px 10px;">Next departures</div>
+      <sc-for list="{{ results }}" as="row" hint-placeholder-count="6">
+      <div role="button" onClick="{{ row.onOpen }}" style="background:var(--surface);border:1px solid {{ row.borderColor }};border-radius:16px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:stretch;gap:14px;">
+        <div style="flex:none;width:4px;border-radius:4px;background:{{ row.lineAccent }};"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:9px;">
+            <span style="font-family:var(--num);font-size:27px;font-weight:700;color:var(--text);line-height:1;">{{ row.depLabel }}</span>
+            <span style="font-size:13px;color:var(--text-3);">→</span>
+            <span style="font-family:var(--num);font-size:21px;font-weight:600;color:var(--text-2);">{{ row.arrLabel }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-family:var(--num);font-weight:700;font-size:11px;color:#fff;background:{{ row.lineColor }};padding:2px 7px;border-radius:6px;letter-spacing:.5px;">{{ row.lineCode }}</span>
+            <span style="font-size:12px;color:var(--text-2);">{{ row.headsign }}</span>
+            <span style="font-size:12px;color:var(--text-3);">· {{ row.stopsLabel }}</span>
+          </div>
+        </div>
+        <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;">
+          <div style="text-align:right;"><div style="font-family:var(--num);font-size:13px;font-weight:700;color:var(--accent);">{{ row.minsLabel }}</div><div style="font-size:11px;color:var(--text-3);margin-top:1px;">{{ row.durationLabel }}</div></div>
+          <div role="button" onClick="{{ row.onSave }}" style="width:32px;height:32px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="font-size:15px;color:{{ row.saveColor }};">{{ row.saveIcon }}</span></div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;animation:fadeIn .2s ease;">
+    <div style="flex:none;display:flex;align-items:center;gap:12px;padding:8px 16px 14px;border-bottom:1px solid var(--line);">
+      <div role="button" onClick="{{ back }}" style="font-size:23px;color:var(--text-2);cursor:pointer;line-height:1;">←</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);">Trip details</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 18px 96px;">
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><span style="font-family:var(--num);font-weight:700;font-size:12px;color:#fff;background:{{ detail.lineColor }};padding:3px 8px;border-radius:6px;letter-spacing:.6px;">{{ detail.lineCode }}</span><span style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;">{{ detail.lineName }}</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="min-width:0;"><div style="font-family:var(--num);font-size:30px;font-weight:700;color:var(--text);line-height:1;">{{ detail.depLabel }}</div><div style="font-size:13px;color:var(--text-2);margin-top:5px;white-space:nowrap;">{{ detail.origin }}</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:0 10px;"><div style="font-size:11px;font-weight:700;color:{{ detail.lineAccent }};font-family:var(--num);background:color-mix(in srgb,var(--accent) 0%,var(--surface-2));padding:3px 9px;border-radius:999px;white-space:nowrap;">{{ detail.durationLabel }}</div><div style="width:100%;height:2px;background:var(--line);margin-top:9px;position:relative;"><div style="position:absolute;right:-1px;top:-3px;color:var(--text-3);font-size:11px;">▶</div></div></div>
+          <div style="text-align:right;min-width:0;"><div style="font-family:var(--num);font-size:30px;font-weight:700;color:var(--text);line-height:1;">{{ detail.arrLabel }}</div><div style="font-size:13px;color:var(--text-2);margin-top:5px;white-space:nowrap;">{{ detail.dest }}</div></div>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">At {{ detail.origin }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+        <sc-for list="{{ detail.amenities }}" as="a" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div><span style="font-size:13px;font-weight:600;color:var(--text-2);">{{ a }}</span></div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;">Stops</div>
+      <div style="position:relative;padding-left:4px;">
+        <div style="position:absolute;left:13px;top:20px;bottom:20px;width:2px;background:{{ detail.lineAccent }};opacity:.35;z-index:1;"></div>
+        <sc-for list="{{ detail.stops }}" as="s" hint-placeholder-count="7">
+        <div style="display:flex;align-items:center;gap:15px;position:relative;padding:9px 0;">
+          <div style="flex:none;width:18px;display:flex;justify-content:center;"><div style="width:{{ s.dotSize }};height:{{ s.dotSize }};border-radius:50%;background:{{ s.dotColor }};box-shadow:0 0 0 {{ s.dotRing }};z-index:2;"></div></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <span style="font-size:{{ s.fontSize }};font-weight:{{ s.weight }};color:{{ s.textColor }};">{{ s.name }}</span>
+            <span style="font-family:var(--num);font-size:15px;font-weight:600;color:{{ s.timeColor }};white-space:nowrap;">{{ s.timeLabel }}</span>
+          </div>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  </div>
+
+  <sc-if value="{{ isSaved }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 18px 96px;animation:fadeIn .2s ease;">
+    <div style="padding:8px 4px 18px;"><div style="font-family:var(--num);font-size:31px;font-weight:700;color:var(--text);letter-spacing:-.3px;">Saved trips</div><div style="font-size:13px;color:var(--text-2);margin-top:2px;">Tap to view · swap to flip direction</div></div>
+    <sc-if value="{{ hasSaved }}" hint-placeholder-val="{{ true }}">
+    <sc-for list="{{ savedCards }}" as="card" hint-placeholder-count="2">
+    <div role="button" onClick="{{ card.soonest.onOpen }}" style="display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;cursor:pointer;">
+      <div style="width:5px;align-self:stretch;border-radius:4px;background:{{ card.lineAccent }};flex:none;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><span style="font-family:var(--num);font-weight:700;font-size:11px;color:#fff;background:{{ card.lineColor }};padding:2px 7px;border-radius:6px;letter-spacing:.5px;">{{ card.lineCode }}</span><span style="font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;">{{ card.origin }} <span style="color:var(--text-3);">→</span> {{ card.dest }}</span></div>
+        <div style="font-size:12px;color:var(--text-2);">Next departs {{ card.soonest.timeLabel }} · <span style="color:var(--accent);font-weight:700;">{{ card.soonest.inLabel }}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;flex:none;">
+        <div role="button" onClick="{{ card.onReverse }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="font-size:16px;color:var(--text-2);">⇅</span></div>
+        <div role="button" onClick="{{ card.onRemove }}" style="width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="font-size:18px;color:var(--text-3);line-height:1;">×</span></div>
+      </div>
+    </div>
+    </sc-for>
+    <div role="button" onClick="{{ goSearch }}" style="width:100%;background:transparent;border:1.5px dashed var(--line);color:var(--text-2);padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;margin-top:2px;">+  Add a trip</div>
+    </sc-if>
+    <sc-if value="{{ noSaved }}" hint-placeholder-val="{{ false }}">
+    <div style="text-align:center;padding:54px 20px;">
+      <div style="width:74px;height:74px;border-radius:22px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><span style="font-size:32px;color:var(--accent);">★</span></div>
+      <div style="font-family:var(--num);font-size:23px;font-weight:700;color:var(--text);margin-bottom:9px;">Nothing saved</div>
+      <div style="font-size:14px;color:var(--text-2);line-height:1.5;max-width:248px;margin:0 auto 22px;">Save a trip from search results and it'll show up here for one-tap access.</div>
+      <div role="button" onClick="{{ goSearch }}" style="display:inline-block;background:var(--accent);color:#fff;padding:14px 26px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;">Find a trip</div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <div style="flex:none;height:74px;background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;align-items:flex-start;padding:11px 30px 0;justify-content:space-between;">
+    <div role="button" onClick="{{ goHome }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;width:56px;">
+      <div style="width:17px;height:17px;border-radius:5px;border:2px solid {{ homeColor }};background:{{ homeFill }};"></div>
+      <span style="font-size:10px;font-weight:700;color:{{ homeColor }};">Home</span>
+    </div>
+    <div role="button" onClick="{{ goSearch }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;width:56px;">
+      <div style="width:16px;height:16px;border-radius:50%;border:2px solid {{ searchColor }};background:{{ searchFill }};"></div>
+      <span style="font-size:10px;font-weight:700;color:{{ searchColor }};">Search</span>
+    </div>
+    <div role="button" onClick="{{ goSaved }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:56px;">
+      <div style="font-size:18px;line-height:1;color:{{ savedColor }};">{{ savedStar }}</div>
+      <span style="font-size:10px;font-weight:700;color:{{ savedColor }};">Saved</span>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:50%;bottom:98px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;animation:toastIn .25s ease;z-index:60;box-shadow:0 8px 26px rgba(0,0,0,.35);">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:438,&quot;height&quot;:892},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;cardStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Board&quot;,&quot;Rail&quot;],&quot;default&quot;:&quot;Board&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;simulatedNow&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Live&quot;,&quot;Morning rush&quot;,&quot;Evening rush&quot;],&quot;default&quot;:&quot;Morning rush&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;use24Hour&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.mountReal = Date.now();
+    this.LINES = {
+      LW:{code:'LW',name:'Lakeshore West',color:'#98002e'},
+      LE:{code:'LE',name:'Lakeshore East',color:'#ff0d00'},
+      KI:{code:'KI',name:'Kitchener',color:'#00853e'},
+      BR:{code:'BR',name:'Barrie',color:'#003767'},
+      RH:{code:'RH',name:'Richmond Hill',color:'#0099c7'},
+      MI:{code:'MI',name:'Milton',color:'#f57f25'},
+      ST:{code:'ST',name:'Stouffville',color:'#794500'},
+    };
+    this.STOPLINES = {
+      LW:[['West Harbour',0],['Aldershot',6],['Burlington',12],['Appleby',17],['Bronte',22],['Oakville',28],['Clarkson',35],['Port Credit',41],['Long Branch',46],['Mimico',51],['Exhibition',57],['Union',61]],
+      LE:[['Oshawa',0],['Whitby',7],['Ajax',14],['Pickering',19],['Rouge Hill',25],['Guildwood',31],['Eglinton',36],['Scarborough',40],['Danforth',46],['Union',53]],
+      KI:[['Kitchener',0],['Guelph Central',18],['Acton',33],['Georgetown',45],['Mount Pleasant',54],['Brampton',60],['Bramalea',66],['Malton',73],['Etobicoke North',79],['Weston',86],['Bloor',95],['Union',101]],
+      BR:[['Barrie South',0],['Allandale Waterfront',6],['Bradford',28],['East Gwillimbury',40],['Newmarket',46],['Aurora',52],['King City',60],['Maple',70],['Rutherford',75],['Downsview Park',90],['Union',105]],
+      ST:[['Mount Joy',0],['Markham',5],['Centennial',9],['Unionville',14],['Milliken',21],['Agincourt',27],['Kennedy',34],['Union',50]],
+    };
+    this.STATIONS = [
+      {name:'Union Station GO', line:'HUB', stop:'Union', code:'HUB'},
+      {name:'Oakville GO', line:'LW', stop:'Oakville'},
+      {name:'Burlington GO', line:'LW', stop:'Burlington'},
+      {name:'West Harbour GO', line:'LW', stop:'West Harbour'},
+      {name:'Whitby GO', line:'LE', stop:'Whitby'},
+      {name:'Oshawa GO', line:'LE', stop:'Oshawa'},
+      {name:'Aurora GO', line:'BR', stop:'Aurora'},
+      {name:'Barrie South GO', line:'BR', stop:'Barrie South'},
+      {name:'Bramalea GO', line:'KI', stop:'Bramalea'},
+      {name:'Kitchener GO', line:'KI', stop:'Kitchener'},
+      {name:'Weston GO', line:'KI', stop:'Weston'},
+      {name:'Mount Joy GO', line:'ST', stop:'Mount Joy'},
+    ];
+    this.AMENITIES = {
+      'Oakville':['Shelter','Washroom','Bike rack','Bench'],
+      'Whitby':['Shelter','Washroom','Parking','Bench'],
+      'Burlington':['Shelter','Bike rack','Bench'],
+      'Union':['Shelter','Washroom','Accessible','Bench'],
+      'Kitchener':['Shelter','Washroom','Bike rack'],
+      'Bramalea':['Shelter','Parking','Bench'],
+      'Aurora':['Shelter','Washroom','Bench'],
+      'Mount Joy':['Shelter','Bike rack','Bench'],
+      'Barrie South':['Shelter','Washroom','Parking','Bench'],
+      'West Harbour':['Shelter','Bench'],
+      'Weston':['Shelter','Washroom','Bench'],
+      'Oshawa':['Shelter','Washroom','Parking','Bench'],
+    };
+    const d = new Date();
+    const pad = (n)=> n<10?'0'+n:''+n;
+    this.state = {
+      theme: props.defaultTheme === 'light' ? 'light' : 'dark',
+      screen: 'home',
+      activeTab: 'home',
+      variant: props.cardStyle === 'Rail' ? 'B' : 'A',
+      now: Date.now(),
+      saved: [{origin:'Oakville GO',dest:'Union Station GO'},{origin:'Whitby GO',dest:'Union Station GO'}],
+      expanded: {},
+      origin: null,
+      dest: null,
+      picker: null,
+      query: '',
+      dateStr: d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),
+      timeStr: pad(d.getHours())+':'+pad(d.getMinutes()),
+      leaveNow: true,
+      detailTrip: null,
+      backTo: 'home',
+      toast: null,
+      installDismissed: false,
+      recents: [
+        {origin:'Burlington GO',dest:'Union Station GO'},
+        {origin:'Union Station GO',dest:'Kitchener GO'},
+        {origin:'Mount Joy GO',dest:'Union Station GO'},
+      ],
+    };
+  }
+  componentDidMount(){ this.timer = setInterval(()=> this.setState({now: Date.now()}), 1000); }
+  componentWillUnmount(){ clearInterval(this.timer); }
+
+  getNow(){
+    const sim = this.props.simulatedNow;
+    if(sim === 'Morning rush') return this.todayAt(445) + (this.state.now - this.mountReal);
+    if(sim === 'Evening rush') return this.todayAt(1045) + (this.state.now - this.mountReal);
+    return this.state.now;
+  }
+  todayAt(min, dayOffset){
+    const d = new Date(this.state.now); d.setHours(0,0,0,0);
+    return d.getTime() + (min + (dayOffset||0)*1440)*60000;
+  }
+  use24(){ return !!this.props.use24Hour; }
+  fmtTime(ms){
+    const d = new Date(ms); let h=d.getHours(); const m=d.getMinutes(); const mm=m<10?'0'+m:''+m;
+    if(this.use24()) return (h<10?'0'+h:h)+':'+mm;
+    const ap = h>=12?'PM':'AM'; h=h%12; if(h===0)h=12;
+    return h+':'+mm+' '+ap;
+  }
+  inLabel(dep){
+    const mins = Math.ceil((dep - this.getNow())/60000);
+    if(mins<=0) return 'now';
+    if(mins<60) return 'in '+mins+' min';
+    const h=Math.floor(mins/60), m=mins%60;
+    return 'in '+h+'h '+(m<10?'0'+m:m)+'m';
+  }
+  mmss(dep){
+    let s = Math.floor((dep - this.getNow())/1000); if(s<0)s=0; if(s>=3600) return this.inLabel(dep);
+    const m=Math.floor(s/60), sec=s%60; return m+':'+(sec<10?'0'+sec:sec);
+  }
+  shortName(n){ return n.replace(' Station GO','').replace(' GO',''); }
+  getStation(name){ return this.STATIONS.find(s=> s.name===name); }
+  mix(hex, t){
+    const h = hex.replace('#',''); const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+    const lr=Math.round(r+(255-r)*t),lg=Math.round(g+(255-g)*t),lb=Math.round(b+(255-b)*t);
+    return 'rgb('+lr+','+lg+','+lb+')';
+  }
+  lineDisp(color){ return this.state.theme==='dark' ? this.mix(color,0.34) : color; }
+
+  pairInfo(originName, destName){
+    const o=this.getStation(originName), d=this.getStation(destName);
+    let lineCode = o.line!=='HUB' ? o.line : d.line;
+    if(lineCode==='HUB') lineCode='LW';
+    const stops = this.STOPLINES[lineCode];
+    let oi = stops.findIndex(s=> s[0]===o.stop);
+    let di = stops.findIndex(s=> s[0]===d.stop);
+    if(oi<0) oi = stops.length-1;
+    if(di<0) di = stops.length-1;
+    return {lineCode, stops, oi, di, oOff:stops[oi][1], dOff:stops[di][1]};
+  }
+  genTimes(lineCode){
+    const base = {LW:12,LE:8,KI:20,BR:25,ST:18,RH:5,MI:33}[lineCode] || 10;
+    const arr=[]; for(let h=5;h<=25;h++){ arr.push(h*60+base); arr.push(h*60+base+30); } return arr;
+  }
+  departures(originName, destName, fromMs, count){
+    const info = this.pairInfo(originName, destName);
+    const travel = Math.abs(info.dOff - info.oOff);
+    const times = this.genTimes(info.lineCode);
+    const out=[];
+    for(let day=0; day<2 && out.length<count; day++){
+      for(const m of times){
+        const dep = this.todayAt(m, day);
+        if(dep >= fromMs-30000){ out.push({dep, arr: dep+travel*60000, travel}); if(out.length>=count) break; }
+      }
+    }
+    return {info, travel, list: out};
+  }
+  tripStops(originName, destName, depMs){
+    const info = this.pairInfo(originName, destName);
+    const {stops, oi, di} = info;
+    const lo=Math.min(oi,di), hi=Math.max(oi,di);
+    let seq = stops.slice(lo, hi+1);
+    if(oi>di) seq = seq.slice().reverse();
+    const baseOff = seq[0][1];
+    return seq.map((s)=> ({name: s[0], t: depMs + Math.abs(s[1]-baseOff)*60000}));
+  }
+  terminus(originName, destName){
+    const info = this.pairInfo(originName, destName);
+    const idx = info.di>info.oi ? info.stops.length-1 : 0;
+    return info.stops[idx][0];
+  }
+
+  fmtDep(x, origin, dest, from){
+    const open = ()=> this.openDetail(origin, dest, x.dep);
+    return {
+      depMs: x.dep,
+      timeLabel: this.fmtTime(x.dep),
+      arrLabel: this.fmtTime(x.arr),
+      durationLabel: x.travel+' min',
+      inLabel: this.inLabel(x.dep),
+      mmss: this.mmss(x.dep),
+      onOpen: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); open(); },
+    };
+  }
+
+  toggleTheme(){ this.setState(s=> ({theme: s.theme==='dark'?'light':'dark'})); }
+  setVariant(v){ this.setState({variant:v}); }
+  toggleExp(o,d){ const k=o+'>'+d; this.setState(s=> ({expanded: {...s.expanded, [k]: !s.expanded[k]}})); }
+  reverse(idx){ this.setState(s=>{ const sv=s.saved.slice(); sv[idx]={origin:sv[idx].dest, dest:sv[idx].origin}; return {saved:sv}; }); }
+  removeTrip(idx){ this.setState(s=> ({saved: s.saved.filter((_,i)=> i!==idx)})); }
+  flashToast(msg){ this.setState({toast:msg}); clearTimeout(this._t); this._t=setTimeout(()=> this.setState({toast:null}), 2200); }
+  saveTrip(origin, dest){
+    this.setState(s=>{
+      if(s.saved.some(t=> t.origin===origin && t.dest===dest)) return {};
+      return {saved: [...s.saved, {origin, dest}]};
+    });
+    this.flashToast('Saved to Home');
+  }
+  pushRecent(origin, dest){
+    this.setState(s=>{
+      const rec = s.recents.filter(r=> !(r.origin===origin && r.dest===dest));
+      return {recents: [{origin,dest}, ...rec].slice(0,4)};
+    });
+  }
+  openDetail(origin, dest, dep){ this.setState(s=> ({detailTrip:{origin,dest,dep}, screen:'detail', backTo: s.screen})); }
+  back(){
+    this.setState(s=>{
+      if(s.screen==='detail') return {screen: s.backTo, activeTab: (s.backTo==='results'||s.backTo==='search')?'search':s.backTo};
+      if(s.screen==='results') return {screen:'search', activeTab:'search'};
+      return {};
+    });
+  }
+  goTab(tab){ this.setState({screen:tab, activeTab:tab, picker:null}); }
+  openPicker(which){ this.setState({picker:which, query:''}); }
+  closePicker(){ this.setState({picker:null}); }
+  chooseStation(name){
+    this.setState(s=> s.picker==='origin' ? {origin:name, picker:null} : {dest:name, picker:null});
+  }
+  swap(){ this.setState(s=> ({origin:s.dest, dest:s.origin})); }
+  onDate(e){ this.setState({dateStr:e.target.value, leaveNow:false}); }
+  onTime(e){ this.setState({timeStr:e.target.value, leaveNow:false}); }
+  setLeaveNow(){ const d=new Date(); const pad=n=>n<10?'0'+n:''+n; this.setState({leaveNow:true, dateStr:d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()), timeStr:pad(d.getHours())+':'+pad(d.getMinutes())}); }
+  selTime(){
+    if(this.state.leaveNow) return this.getNow();
+    const t = new Date(this.state.dateStr+'T'+this.state.timeStr).getTime();
+    return isNaN(t) ? this.getNow() : t;
+  }
+  runSearch(){
+    if(!this.state.origin || !this.state.dest) { this.flashToast('Pick origin & destination'); return; }
+    this.pushRecent(this.state.origin, this.state.dest);
+    this.setState({screen:'results', activeTab:'search'});
+  }
+  runRecent(origin, dest){ this.setState({origin, dest, leaveNow:true, screen:'results', activeTab:'search'}); this.pushRecent(origin,dest); }
+
+  renderVals(){
+    const now = this.getNow();
+    const theme = this.state.theme;
+    const isDark = theme==='dark';
+    const accentActive = isDark ? '#1aa84e' : '#00853e';
+
+    // saved cards
+    const savedCards = this.state.saved.map((t, idx)=>{
+      const {info, list} = this.departures(t.origin, t.dest, now, 6);
+      const line = this.LINES[info.lineCode];
+      const deps = list.map(x=> this.fmtDep(x, t.origin, t.dest, now));
+      const k = t.origin+'>'+t.dest;
+      const expanded = !!this.state.expanded[k];
+      return {
+        id: idx,
+        origin: this.shortName(t.origin),
+        dest: this.shortName(t.dest),
+        lineCode: line.code, lineName: line.name, lineColor: line.color,
+        lineAccent: this.lineDisp(line.color),
+        soonest: deps[0] || {timeLabel:'—',inLabel:'',mmss:'',arrLabel:'',durationLabel:''},
+        more: deps.slice(1,3),
+        extra: deps.slice(3,5),
+        expanded,
+        expandLabel: expanded ? 'Show less ▴' : 'Show more departures ▾',
+        onToggle: ()=> this.toggleExp(t.origin, t.dest),
+        onReverse: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.reverse(idx); },
+        onRemove: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.removeTrip(idx); },
+      };
+    });
+
+    // stations for picker
+    const q = this.state.query.trim().toLowerCase();
+    const filteredStations = this.STATIONS.filter(s=> !q || s.name.toLowerCase().includes(q)).map(s=>{
+      const color = s.line==='HUB' ? '#8b949a' : this.lineDisp(this.LINES[s.line].color);
+      return {name:s.name, code:s.line==='HUB'?'HUB':s.line, dot:color, onPick: ()=> this.chooseStation(s.name)};
+    });
+
+    const recents = this.state.recents.map(r=>{
+      const info = this.pairInfo(r.origin, r.dest);
+      const line = this.LINES[info.lineCode];
+      return {origin:this.shortName(r.origin), dest:this.shortName(r.dest), lineCode:line.code, lineColor:line.color, onRun: ()=> this.runRecent(r.origin, r.dest)};
+    });
+
+    // results
+    let results=[], resOrigin='', resDest='', resContext='';
+    if(this.state.screen==='results' && this.state.origin && this.state.dest){
+      const from = this.selTime();
+      const {info, list, travel} = this.departures(this.state.origin, this.state.dest, from, 9);
+      const line = this.LINES[info.lineCode];
+      const stopsBetween = Math.abs(info.di - info.oi) - 1;
+      const stopsLabel = stopsBetween<=0 ? 'Nonstop' : stopsBetween+' stops';
+      const head = 'To '+this.shortName(this.terminus(this.state.origin, this.state.dest)==='Union'?'Union Station GO':(this.terminus(this.state.origin,this.state.dest)+' GO'));
+      const saved = this.state.saved.some(t=> t.origin===this.state.origin && t.dest===this.state.dest);
+      resOrigin = this.shortName(this.state.origin);
+      resDest = this.shortName(this.state.dest);
+      resContext = 'After '+this.fmtTime(from)+' · '+line.name;
+      results = list.map((x,i)=>({
+        id:i,
+        depLabel: this.fmtTime(x.dep),
+        arrLabel: this.fmtTime(x.arr),
+        durationLabel: travel+' min',
+        minsLabel: this.inLabel(x.dep),
+        lineCode: line.code, lineColor: line.color, lineAccent: this.lineDisp(line.color),
+        headsign: head, stopsLabel,
+        borderColor: i<2 ? 'color-mix(in srgb,'+accentActive+' 50%,var(--line))' : 'var(--line)',
+        saveIcon: saved ? '★' : '☆',
+        saveColor: saved ? 'var(--accent)' : 'var(--text-2)',
+        onOpen: ()=> this.openDetail(this.state.origin, this.state.dest, x.dep),
+        onSave: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.saveTrip(this.state.origin, this.state.dest); },
+      }));
+    }
+
+    // detail
+    let detail = null;
+    if(this.state.screen==='detail' && this.state.detailTrip){
+      const {origin, dest, dep} = this.state.detailTrip;
+      const info = this.pairInfo(origin, dest);
+      const line = this.LINES[info.lineCode];
+      const accent = this.lineDisp(line.color);
+      const stopsArr = this.tripStops(origin, dest, dep);
+      const lastIdx = stopsArr.length-1;
+      const stops = stopsArr.map((s,i)=>{
+        const isEnd = i===0 || i===lastIdx;
+        const passed = s.t < now;
+        return {
+          name: s.name,
+          timeLabel: this.fmtTime(s.t),
+          dotSize: isEnd ? '15px' : '10px',
+          dotColor: isEnd ? accent : (passed ? 'var(--text-3)' : 'var(--surface)'),
+          dotRing: isEnd ? '0 transparent' : '1.5px '+accent,
+          textColor: isEnd ? 'var(--text)' : (passed ? 'var(--text-3)' : 'var(--text-2)'),
+          timeColor: isEnd ? 'var(--text)' : 'var(--text-2)',
+          fontSize: isEnd ? '16px' : '14px',
+          weight: isEnd ? '700' : '500',
+        };
+      });
+      const originStop = this.getStation(origin).stop;
+      detail = {
+        lineCode: line.code, lineName: line.name, lineColor: line.color, lineAccent: accent,
+        origin: this.shortName(origin), dest: this.shortName(dest),
+        depLabel: this.fmtTime(dep), arrLabel: this.fmtTime(stopsArr[lastIdx].t),
+        durationLabel: Math.round((stopsArr[lastIdx].t - dep)/60000)+' min',
+        amenities: this.AMENITIES[originStop] || ['Shelter','Bench'],
+        stops,
+      };
+    }
+
+    const seg = (active)=> active ? 'var(--accent)' : 'transparent';
+    const segText = (active)=> active ? '#fff' : 'var(--text-2)';
+    const tabOn = (t)=> this.state.activeTab===t ? 'var(--accent)' : 'var(--text-3)';
+    const tabFill = (t)=> this.state.activeTab===t ? 'var(--accent)' : 'transparent';
+
+    const greetHour = new Date(now).getHours();
+    const greeting = greetHour<12 ? 'Good morning' : (greetHour<18 ? 'Good afternoon' : 'Good evening');
+
+    return {
+      theme,
+      clock: this.fmtTime(now),
+      isDark, isLight: !isDark,
+      toggleTheme: ()=> this.toggleTheme(),
+      greeting,
+      isHome: this.state.screen==='home',
+      isSearch: this.state.screen==='search',
+      isResults: this.state.screen==='results',
+      isDetail: this.state.screen==='detail',
+      isSaved: this.state.screen==='saved',
+      isVariantA: this.state.variant==='A',
+      isVariantB: this.state.variant==='B',
+      setVariantA: ()=> this.setVariant('A'),
+      setVariantB: ()=> this.setVariant('B'),
+      vABg: seg(this.state.variant==='A'), vAColor: segText(this.state.variant==='A'),
+      vBBg: seg(this.state.variant==='B'), vBColor: segText(this.state.variant==='B'),
+      savedCards,
+      hasSaved: savedCards.length>0,
+      noSaved: savedCards.length===0,
+      showInstall: !this.state.installDismissed && savedCards.length>0,
+      dismissInstall: (e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); this.setState({installDismissed:true}); },
+      goHome: ()=> this.goTab('home'),
+      goSearch: ()=> this.goTab('search'),
+      goSaved: ()=> this.goTab('saved'),
+      // search
+      originLabel: this.state.origin ? this.state.origin : 'Choose station',
+      destLabel: this.state.dest ? this.state.dest : 'Choose station',
+      originColor: this.state.origin ? 'var(--text)' : 'var(--text-3)',
+      destColor: this.state.dest ? 'var(--text)' : 'var(--text-3)',
+      openOriginPicker: ()=> this.openPicker('origin'),
+      openDestPicker: ()=> this.openPicker('dest'),
+      swap: ()=> this.swap(),
+      dateStr: this.state.dateStr, timeStr: this.state.timeStr,
+      onDate: (e)=> this.onDate(e), onTime: (e)=> this.onTime(e),
+      setLeaveNow: ()=> this.setLeaveNow(),
+      nowChipBg: this.state.leaveNow ? 'color-mix(in srgb,'+accentActive+' 16%,transparent)' : 'var(--surface)',
+      nowChipBorder: this.state.leaveNow ? 'color-mix(in srgb,'+accentActive+' 35%,transparent)' : 'var(--line)',
+      nowChipColor: this.state.leaveNow ? 'var(--accent)' : 'var(--text-2)',
+      nowChipDot: this.state.leaveNow ? 'var(--accent)' : 'var(--text-3)',
+      runSearch: ()=> this.runSearch(),
+      searchOpacity: (this.state.origin && this.state.dest) ? '1' : '0.55',
+      recents,
+      // picker
+      pickerOpen: !!this.state.picker,
+      pickerTitle: this.state.picker==='origin' ? 'From' : 'To',
+      query: this.state.query,
+      onQuery: (e)=> this.setState({query:e.target.value}),
+      closePicker: ()=> this.closePicker(),
+      filteredStations,
+      // results
+      results, resOrigin, resDest, resContext,
+      back: ()=> this.back(),
+      // detail
+      detail,
+      // tabs
+      homeColor: tabOn('home'), homeFill: tabFill('home'),
+      searchColor: tabOn('search'), searchFill: tabFill('search'),
+      savedColor: this.state.activeTab==='saved' ? 'var(--accent)' : 'var(--text-3)',
+      savedStar: this.state.activeTab==='saved' ? '★' : '☆',
+      toast: this.state.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

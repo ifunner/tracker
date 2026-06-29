@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:#fff;font-family:'Public Sans',system-ui,sans-serif;color:#1c2123;}
+.doc{box-sizing:border-box;max-width:8.5in;margin:0 auto;background:inherit;padding:54px clamp(24px,5vw,0.78in) 96px;}
+.doc-frame{width:100%;border-collapse:collapse;}
+.doc-frame td{padding:0;}
+.hdr-space,.ftr-space{display:none;}
+h1,h2,h3{text-wrap:balance;}
+p,li{text-wrap:pretty;}
+@page{size:letter;margin:0;}
+@media print{
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body{margin:0;padding:0;}
+  .doc{max-width:none !important;margin:0 !important;padding:0 0.78in !important;box-shadow:none !important;}
+  .hdr-space,.ftr-space{display:table-cell;height:0.7in;}
+  h1,h2,h3,h4,h5,h6{break-after:avoid;}
+  figure,pre,blockquote,svg,tr,.keep{break-inside:avoid;}
+  p,li{orphans:3;widows:3;}
+  .screen-only{display:none !important;}
+}
+</style>
+</helmet>
+<main class="doc">
+<table class="doc-frame" role="presentation">
+<thead><tr><td class="hdr-space"></td></tr></thead>
+<tbody><tr><td>
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+  <div style="width:42px;height:42px;border-radius:11px;background:#00853e;color:#fff;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;">GO</div>
+  <div style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;">Design Specification · Dev Handoff</div>
+</div>
+<h1 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:42px;font-weight:700;line-height:1.02;letter-spacing:-.5px;margin:0 0 14px;color:#10201a;">GO Schedule PWA — Design Kit</h1>
+<p style="font-size:15.5px;line-height:1.6;color:#4a5358;margin:0 0 6px;max-width:46em;">A mobile-first Progressive Web App for searching GO Transit (Toronto) train &amp; bus schedules, optimized for the daily commuter who reuses one or two trips. This document is the single source of truth for engineering: design tokens, component specs, interaction rules, data shape, and the decisions still pending sign-off.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;">
+  <span style="font-size:12px;font-weight:700;background:#eef3f0;color:#1f6b43;padding:5px 11px;border-radius:999px;">Platform · Mobile web / installable PWA (~390px)</span>
+  <span style="font-size:12px;font-weight:700;background:#f1f3f4;color:#5a646a;padding:5px 11px;border-radius:999px;">Scope · v1 direct trips, single line</span>
+  <span style="font-size:12px;font-weight:700;background:#fbf1e8;color:#9a5a16;padding:5px 11px;border-radius:999px;">Status · Visual locked · data layer pending</span>
+</div>
+
+<div style="height:1px;background:#e4e7e9;margin:30px 0;"></div>
+
+<!-- HOW TO READ -->
+<div style="background:#f7f9f9;border:1px solid #e4e7e9;border-radius:12px;padding:16px 18px;margin-bottom:8px;" class="keep">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#7e878c;margin-bottom:8px;">How to read this kit</div>
+  <p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;">Values marked <b style="color:#1f6b43;">LOCKED</b> are extracted directly from the approved interactive component (<code style="font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#eceff0;padding:1px 5px;border-radius:4px;">GO Schedule.dc.html</code>) and are build-ready. Items marked <b style="color:#b5701b;">DECIDE</b> still need your sign-off — each carries a recommended default so dev is never blocked. Section 11 collects every open decision in one checklist.</p>
+</div>
+
+<!-- ============ 01 PRINCIPLES ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:40px 0 4px;">01 — Product Principles</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<ul style="font-size:14.5px;line-height:1.6;color:#3f484d;margin:0;padding-left:20px;">
+  <li style="margin-bottom:7px;"><b style="color:#1c2123;">Returning user first.</b> Opening the app shows next departures for saved trips instantly — zero taps, no spinner blocking the answer.</li>
+  <li style="margin-bottom:7px;"><b style="color:#1c2123;">Departure time is the hero.</b> Times use the condensed display face at large sizes; everything else is supporting metadata.</li>
+  <li style="margin-bottom:7px;"><b style="color:#1c2123;">Line color accents, never floods.</b> Brand color appears as a badge or a thin rail — surfaces stay neutral.</li>
+  <li style="margin-bottom:7px;"><b style="color:#1c2123;">Tap-friendly &amp; offline-resilient.</b> ≥44px primary targets; the schedule index must work fully offline.</li>
+</ul>
+
+<!-- ============ 02 COLOR ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">02 — Color Tokens <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 14px;">Two themes ship. Default is <b>Dark</b>; a manual toggle switches to Light (auto/device-follow is a DECIDE item, §11). Implement as CSS custom properties on a theme root; do not hardcode.</p>
+
+<div style="display:flex;gap:18px;flex-wrap:wrap;">
+<div style="flex:1;min-width:240px;" class="keep">
+<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7e878c;margin-bottom:8px;">Dark theme (default)</div>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#050607;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--page</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#050607</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#0e1113;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--bg</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#0e1113</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#171b1e;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--surface</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#171b1e</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#21262a;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--surface-2</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#21262a</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#eef1f2;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#eef1f2</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#9aa3a8;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text-2</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#9aa3a8</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#646e74;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text-3</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#646e74</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#1aa84e;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--accent</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#1aa84e</td></tr>
+<tr><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:rgba(0,0,0,.5);border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--line</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">rgba(255,255,255,.085)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div style="flex:1;min-width:240px;" class="keep">
+<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7e878c;margin-bottom:8px;">Light theme</div>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#c9cdcf;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--page</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#c9cdcf</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#eef0f1;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--bg</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#eef0f1</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#ffffff;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--surface</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#ffffff</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#eceef0;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--surface-2</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#eceef0</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#13181b;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#13181b</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#5a646a;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text-2</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#5a646a</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#949ca1;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--text-3</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#949ca1</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:#00853e;border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--accent</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">#00853e</td></tr>
+<tr><td style="padding:7px 0;"><span style="display:inline-block;width:15px;height:15px;border-radius:4px;background:rgba(0,0,0,.09);border:1px solid #d8dcde;vertical-align:middle;margin-right:8px;"></span><code style="font-family:ui-monospace,Menlo,monospace;">--line</code></td><td style="text-align:right;color:#6b7378;font-family:ui-monospace,Menlo,monospace;">rgba(0,0,0,.09)</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<p style="font-size:13px;line-height:1.55;color:#6b7378;margin:14px 0 0;font-style:italic;">Accent is the only action color (primary buttons, active tab, "in X min" pills, save-confirmed star). It shifts between themes (<code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">#1aa84e</code> dark / <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">#00853e</code> light) for contrast. <b style="color:#b5701b;">DECIDE:</b> confirm these are the official GO action greens or supply replacements.</p>
+
+<!-- ============ 03 LINE COLORS ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">03 — Line Colors &amp; Dark-Mode Rule <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 14px;">Official GO brand hex, used <b>as-is</b> for filled badges (always with white text). For rails, dots, and colored numerals, a brightened variant is used in dark mode so navy/brown stay legible.</p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;" class="keep">
+<thead><tr style="background:#f4f6f6;text-align:left;"><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Line</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Code</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Badge hex</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Swatch</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Lakeshore West</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">LW</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#98002e</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#98002e;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">LW</span></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Lakeshore East</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">LE</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#ff0d00</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#ff0d00;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">LE</span></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Kitchener</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">KI</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#00853e</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#00853e;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">KI</span></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Barrie</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">BR</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#003767</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#003767;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">BR</span></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Richmond Hill</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">RH</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#0099c7</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#0099c7;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">RH</span></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Milton</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">MI</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#f57f25</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#f57f25;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">MI</span></td></tr>
+<tr><td style="padding:8px 10px;">Stouffville</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">ST</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">#794500</td><td style="padding:8px 10px;"><span style="display:inline-block;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:11px;color:#fff;background:#794500;padding:2px 8px;border-radius:6px;letter-spacing:.5px;">ST</span></td></tr>
+</tbody>
+</table>
+<div style="background:#f7f9f9;border:1px solid #e4e7e9;border-radius:10px;padding:13px 15px;margin-top:14px;" class="keep">
+<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7e878c;margin-bottom:6px;">Dark-mode brightening rule</div>
+<p style="font-size:13px;line-height:1.55;color:#3f484d;margin:0 0 8px;">For non-badge uses (rails, dots, hero countdown numerals), blend the brand hex 34% toward white in dark mode only. Badges never brighten.</p>
+<pre style="background:#10201a;color:#d6efe0;border-radius:8px;padding:12px 14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.55;margin:0;overflow-x:auto;">lineAccent = theme === 'dark'
+  ? mix(brandHex, '#ffffff', 0.34)   // rails, dots, numerals
+  : brandHex;
+// e.g. BR #003767 → ~rgb(86,121,151) on dark</pre>
+</div>
+
+<!-- ============ 04 TYPOGRAPHY ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">04 — Typography <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 14px;">Two families. <b style="font-family:'Barlow Semi Condensed',sans-serif;">Barlow Semi Condensed</b> — all times, countdowns, badges, and screen titles (the transit-board voice). <b>Public Sans</b> — body copy, labels, metadata. Self-host both for offline use.</p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;" class="keep">
+<thead><tr style="background:#f4f6f6;text-align:left;"><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Role</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Family / weight</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Size</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Sample</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Hero time (Board)</td><td style="padding:8px 10px;">Barlow SC 700</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">46 / .82</td><td style="padding:8px 10px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:24px;color:#10201a;">7:42 AM</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Hero countdown (Rail)</td><td style="padding:8px 10px;">Barlow SC 700</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">36</td><td style="padding:8px 10px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:22px;color:#1aa84e;">in 17 min</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Screen title</td><td style="padding:8px 10px;">Barlow SC 700</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">31 / -.3</td><td style="padding:8px 10px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:20px;color:#10201a;">Your trips</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Result dep / detail time</td><td style="padding:8px 10px;">Barlow SC 700/600</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">27 · 30</td><td style="padding:8px 10px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:700;font-size:18px;color:#10201a;">8:12 AM</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Secondary departure</td><td style="padding:8px 10px;">Barlow SC 600</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">19</td><td style="padding:8px 10px;font-family:'Barlow Semi Condensed',sans-serif;font-weight:600;font-size:16px;color:#3f484d;">8:42 AM</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Body / station name</td><td style="padding:8px 10px;">Public Sans 600</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">15–16</td><td style="padding:8px 10px;font-weight:600;font-size:15px;color:#1c2123;">Oakville GO</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Metadata / secondary</td><td style="padding:8px 10px;">Public Sans 500</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">12–13</td><td style="padding:8px 10px;font-weight:500;font-size:12.5px;color:#5a646a;">arr 8:15 AM · 33 min</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Eyebrow / section label</td><td style="padding:8px 10px;">Public Sans 700 · caps · .6–.7 tracking</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">11–12</td><td style="padding:8px 10px;font-weight:700;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:#7e878c;">Next departures</td></tr>
+<tr><td style="padding:8px 10px;">Tab label</td><td style="padding:8px 10px;">Public Sans 700</td><td style="padding:8px 10px;font-family:ui-monospace,Menlo,monospace;">10</td><td style="padding:8px 10px;font-weight:700;font-size:10px;color:#1aa84e;">Home</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 05 LAYOUT ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">05 — Spacing, Radius &amp; Elevation <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<div style="display:flex;gap:18px;flex-wrap:wrap;">
+<div style="flex:1;min-width:220px;" class="keep">
+<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7e878c;margin-bottom:8px;">Radius</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">App frame</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">46px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Cards</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">20px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Panels / banners</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">16–18px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Inputs / chips</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">12–14px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Icon buttons</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">9–11px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Line badge</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">6–7px</td></tr>
+<tr><td style="padding:6px 0;">Pills / countdown</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">999px</td></tr>
+</tbody>
+</table>
+</div>
+<div style="flex:1;min-width:220px;" class="keep">
+<div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7e878c;margin-bottom:8px;">Spacing &amp; structure</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Frame width</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">390px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Status bar</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">50px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Tab bar</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">74px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Screen H-padding</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">18px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Card padding</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">16px</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:6px 0;">Card gap</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">14px</td></tr>
+<tr><td style="padding:6px 0;">Scroll bottom inset</td><td style="text-align:right;font-family:ui-monospace,Menlo,monospace;color:#6b7378;">96px</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<p style="font-size:13px;line-height:1.55;color:#3f484d;margin:14px 0 0;"><b>Elevation:</b> surfaces are separated by the <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--line</code> hairline and <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--surface</code> contrast — no drop shadows inside the app (only the frame itself). The tab bar uses <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">backdrop-filter: blur(14px)</code> over a 90%-opacity surface. <b>Min hit target: 44px</b> for primary actions; the 34px icon buttons must carry ≥6px touch padding to reach it.</p>
+
+<!-- ============ 06 COMPONENTS ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">06 — Component Specs <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:18px 0 6px;">Line badge</h3>
+<p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;">Filled brand-color chip, white Barlow SC 700 text 11–13px, padding 3×9px, radius 6–7px, letter-spacing .6px. Two-letter code. Never brightened; white text on all seven lines passes contrast.</p>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:18px 0 6px;">Saved trip card</h3>
+<p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0 0 8px;">Two approved looks. <b style="color:#b5701b;">DECIDE</b> which ships as default (§11) — recommend <b>Board</b> for at-a-glance scanning.</p>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;padding-left:20px;">
+<li style="margin-bottom:5px;"><b>Board:</b> header (badge · O→D · reverse) → hero time 46px + accent "in X min" pill + mm:ss/arr/duration line → divider → 2 secondary departure rows → "Show more" reveals 2 more.</li>
+<li style="margin-bottom:5px;"><b>Rail:</b> 6px line-accent rail at left edge → badge + line name → O→D → hero countdown 36px in line-accent → next departures as tappable time chips → "Show more".</li>
+<li>Tapping the card body toggles expand. Tapping any departure (hero or row/chip) opens Trip Detail. The reverse button stops propagation.</li>
+</ul>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:18px 0 6px;">Departure row · result row</h3>
+<p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;">Result row: left line-accent bar (4px) · dep time 27px → arr 21px · badge + headsign + stop count · right column with "in X min" (accent) over duration over a save toggle (★/☆, 32px). The two soonest rows get an accent-tinted border. Whole row is tappable to detail; save button stops propagation.</p>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:18px 0 6px;">Inputs</h3>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;padding-left:20px;">
+<li style="margin-bottom:5px;"><b>O/D field:</b> grouped card; From has a hollow ring marker, To a filled square; a swap button overlaps the divider on the right. Tapping a field opens the full-height station picker.</li>
+<li style="margin-bottom:5px;"><b>Station picker:</b> slide-up panel, search input + filtered list; each row = line-color dot + name + code. Union shows a neutral <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">#8b949a</code> dot + "HUB".</li>
+<li style="margin-bottom:5px;"><b>Date / Time:</b> two native inputs (themed via <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">color-scheme</code>), plus a "Leave now" pill that resets both to the current moment.</li>
+</ul>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:18px 0 6px;">Tab bar · toast · cues</h3>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;padding-left:20px;">
+<li style="margin-bottom:5px;"><b>Tab bar:</b> Home / Search / Saved; active = accent fill + accent label, inactive = <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--text-3</code>. Results &amp; Detail are pushed views that keep Search (or originating tab) lit.</li>
+<li style="margin-bottom:5px;"><b>Toast:</b> pill, <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--text</code> bg on <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--bg</code> text, bottom-center, auto-dismiss 2.2s.</li>
+<li><b>Offline / install cues:</b> "Offline ready" pill in the Home header; a dismissible "Install GO Schedule" banner. <b style="color:#b5701b;">Decorative in the mockup</b> — see §10.</li>
+</ul>
+
+<!-- ============ 07 SCREENS ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">07 — Screen Inventory</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;" class="keep">
+<thead><tr style="background:#f4f6f6;text-align:left;"><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Screen</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Job</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Key elements</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;font-weight:700;">Home / Saved</td><td style="padding:8px 10px;color:#4a5358;">Default. Next departures for saved trips at a glance.</td><td style="padding:8px 10px;color:#4a5358;">Greeting, offline pill, install banner, card-style toggle, saved cards, "+ Add a trip", empty state.</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;font-weight:700;">Search</td><td style="padding:8px 10px;color:#4a5358;">Plan a new O/D for a date/time.</td><td style="padding:8px 10px;color:#4a5358;">O/D fields + swap, station picker, date/time, "Leave now", primary action, recent searches.</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;font-weight:700;">Results</td><td style="padding:8px 10px;color:#4a5358;">Choose a departure.</td><td style="padding:8px 10px;color:#4a5358;">Context bar (O→D, after-time, line), "Next departures" group, scrollable result rows with save.</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;font-weight:700;">Trip Detail</td><td style="padding:8px 10px;color:#4a5358;">Inspect a single trip.</td><td style="padding:8px 10px;color:#4a5358;">Summary (badge, dep→arr, duration), origin amenities, full stop-by-stop timeline (origin/dest emphasized, passed stops dimmed).</td></tr>
+<tr><td style="padding:8px 10px;font-weight:700;">Saved (manage)</td><td style="padding:8px 10px;color:#4a5358;">Reorder / flip / remove saved trips.</td><td style="padding:8px 10px;color:#4a5358;">Compact rows (badge, O→D, next dep, reverse + delete), empty state.</td></tr>
+</tbody>
+</table>
+<p style="font-size:13px;line-height:1.55;color:#6b7378;margin:12px 0 0;font-style:italic;">No map view in v1 (decided). <b style="color:#b5701b;">DECIDE:</b> whether "Home" and "Saved" stay distinct tabs or merge — they overlap today (Home = live dashboard, Saved = management).</p>
+
+<!-- ============ 08 INTERACTION ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">08 — Interaction &amp; Behavior Rules</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:6px 0 6px;">Countdown logic <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h3>
+<pre style="background:#f6f8f8;border:1px solid #e3e6e8;border-radius:8px;padding:14px 16px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;color:#1f2426;margin:0 0 8px;">mins = ceil((depart - now) / 60s)
+inLabel:  mins <= 0          → "now"
+          mins  < 60         → "in {mins} min"
+          else               → "in {h}h {mm}m"
+mmss:     secs < 3600        → "M:SS"  (ticks every 1s, soonest only)
+          secs >= 3600       → falls back to inLabel
+clock tick: setInterval 1000ms re-renders all live values</pre>
+<p style="font-size:13px;line-height:1.55;color:#3f484d;margin:0 0 16px;"><b style="color:#b5701b;">DECIDE:</b> confirm the mm:ss seconds ticker (vs minute-only), and how many decimals of "live" you want once real-time (GTFS-RT) deltas exist.</p>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:6px 0 6px;">Departures shown <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h3>
+<p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0 0 16px;">Collapsed card = 1 hero + 2 rows. Expanded = +2 (5 total). Results list fetches the next 9 from the reference time. <b style="color:#b5701b;">DECIDE:</b> 2 vs 3 secondary rows as the collapsed default.</p>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:6px 0 6px;">Core actions <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h3>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0 0 16px;padding-left:20px;">
+<li style="margin-bottom:5px;"><b>Reverse:</b> swaps O↔D in place and <b>persists</b> (morning ↔ evening commute on one card). <b style="color:#b5701b;">DECIDE:</b> persist vs momentary peek.</li>
+<li style="margin-bottom:5px;"><b>Save:</b> from a result row; de-duplicates, appends to saved, toasts "Saved to Home". Star toggles ☆→★.</li>
+<li style="margin-bottom:5px;"><b>Theme:</b> manual toggle in the status bar; instant, no reload.</li>
+<li><b>Search default:</b> "Leave now" (depart-after). <b style="color:#b5701b;">DECIDE:</b> add an "arrive by" mode?</li>
+</ul>
+
+<h3 style="font-size:16px;font-weight:700;color:#10201a;margin:6px 0 6px;">Navigation model <span style="color:#1f6b43;font-size:11px;">LOCKED</span></h3>
+<p style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;">Three tabs (Home / Search / Saved) + two pushed views (Results, Detail) with a back affordance. Back: Detail → originating screen; Results → Search. Search context (O/D, time) persists across the flow.</p>
+
+<!-- ============ 09 STATES ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">09 — State Inventory <span style="color:#b5701b;font-size:11px;">DECIDE</span></h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 12px;">The mockup ships the happy path + first-run empty state. Engineering needs designs/copy for the rest before build:</p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;" class="keep">
+<thead><tr style="background:#f4f6f6;text-align:left;"><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">State</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Status</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Needed</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">First-run / no saved trips</td><td style="padding:8px 10px;color:#1f6b43;font-weight:700;">Done</td><td style="padding:8px 10px;color:#4a5358;">—</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">No departures left today</td><td style="padding:8px 10px;color:#b5701b;font-weight:700;">Spec</td><td style="padding:8px 10px;color:#4a5358;">Copy + roll-to-tomorrow behavior</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Search returns nothing</td><td style="padding:8px 10px;color:#b5701b;font-weight:700;">Spec</td><td style="padding:8px 10px;color:#4a5358;">Empty result + suggested fix</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Loading / first index build</td><td style="padding:8px 10px;color:#b5701b;font-weight:700;">Spec</td><td style="padding:8px 10px;color:#4a5358;">Skeleton vs spinner; cold-start cue</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;">Offline / stale data</td><td style="padding:8px 10px;color:#b5701b;font-weight:700;">Spec</td><td style="padding:8px 10px;color:#4a5358;">"Last updated" banner, what's usable</td></tr>
+<tr><td style="padding:8px 10px;">No service (overnight / holiday)</td><td style="padding:8px 10px;color:#b5701b;font-weight:700;">Spec</td><td style="padding:8px 10px;color:#4a5358;">Message + next-service time</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 10 DATA MODEL ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">10 — Data Model &amp; GTFS Mapping</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 12px;">The mockup runs on hardcoded sample data shaped as below. The production data layer turns the 104&nbsp;MB GTFS feed into a compact per-day-type / per-station-pair index in IndexedDB — the UI contracts shouldn't change.</p>
+<pre style="background:#10201a;color:#d6efe0;border-radius:10px;padding:16px 18px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;margin:0 0 12px;">Line     { code, name, color }                 // 7 lines, §03
+Station  { name, lineCode, stopId, code }       // name + line-color dot
+StopSeq  [ [stopName, offsetMinutes], … ]       // ordered toward Union
+Departure{ depart:epochMs, arrive:epochMs, travelMin }
+SavedTrip{ origin, dest }                        // reverse = swap
+Amenity  string[]                                // per origin station
+
+// derived
+travelMin   = |destOffset - originOffset|
+arrive      = depart + travelMin*60s
+stopsBetween= |destIdx - originIdx| - 1
+headsign    = line terminus in travel direction</pre>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;padding-left:20px;">
+<li style="margin-bottom:5px;"><b style="color:#b5701b;">DECIDE — service calendars:</b> weekday / Saturday / Sunday / holiday day-types must drive which departures exist. Mockup uses a flat 30-min headway.</li>
+<li style="margin-bottom:5px;"><b style="color:#b5701b;">DECIDE — static vs real-time:</b> scheduled GTFS only, or GTFS-RT for delays / "on time" badges? Large scope delta.</li>
+<li style="margin-bottom:5px;"><b style="color:#b5701b;">DECIDE — transfers:</b> v1 is direct-only (cross-line searches currently clamp to Union). "Connection at Union" is a separate effort.</li>
+<li><b style="color:#b5701b;">DECIDE — amenities:</b> source the real shelter/washroom/bike/bench flags from the feed; pick an icon set (mockup uses text chips).</li>
+</ul>
+
+<!-- ============ 11 PWA + A11Y ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">11 — PWA &amp; Accessibility</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<ul style="font-size:13.5px;line-height:1.55;color:#3f484d;margin:0;padding-left:20px;">
+<li style="margin-bottom:5px;"><b>Manifest + icons:</b> not in the mockup. Need name, theme/background color (tie to <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">--bg</code>), maskable icon set, standalone display.</li>
+<li style="margin-bottom:5px;"><b>Service worker / caching:</b> app shell + schedule index cached for offline; real-time data (if any) network-first with stale fallback.</li>
+<li style="margin-bottom:5px;"><b>Theme:</b> manual toggle done; <b style="color:#b5701b;">DECIDE</b> auto/device-follow (<code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">prefers-color-scheme</code>).</li>
+<li style="margin-bottom:5px;"><b>Contrast:</b> verify all line-accent-on-surface text meets WCAG AA in both themes; the brightening rule (§03) exists for this — re-check after final hex sign-off.</li>
+<li style="margin-bottom:5px;"><b>Targets &amp; focus:</b> 44px minimum; the symbol glyphs (⇅, ★, ←, ×) need ARIA labels and visible focus rings for keyboard/AT.</li>
+<li><b>Reduced motion:</b> respect <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">prefers-reduced-motion</code> for the slide/fade transitions and the ticking countdown.</li>
+</ul>
+
+<!-- ============ 12 DECISIONS ============ -->
+<h2 style="font-family:'Barlow Semi Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00853e;margin:42px 0 4px;">12 — Open Decisions Checklist</h2>
+<div style="height:2px;width:100%;background:#10201a;margin-bottom:16px;"></div>
+<p style="font-size:14px;line-height:1.55;color:#3f484d;margin:0 0 14px;">Sign off these to unblock the build. Each has a recommended default so dev can proceed in parallel.</p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;" class="keep">
+<thead><tr style="background:#f4f6f6;text-align:left;"><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;width:22px;"></th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Decision</th><th style="padding:9px 10px;font-weight:700;color:#4a5358;border-bottom:1.5px solid #e4e7e9;">Recommended default</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Confirm action greens are official GO</td><td style="padding:8px 10px;color:#4a5358;">Keep <code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">#1aa84e</code>/<code style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;">#00853e</code></td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Default saved-card look</td><td style="padding:8px 10px;color:#4a5358;">Board (offer Rail as preference)</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Home vs Saved tabs — merge or keep</td><td style="padding:8px 10px;color:#4a5358;">Keep distinct</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Secondary departures shown collapsed</td><td style="padding:8px 10px;color:#4a5358;">2 rows</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">mm:ss seconds ticker</td><td style="padding:8px 10px;color:#4a5358;">On for soonest only</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Time mode</td><td style="padding:8px 10px;color:#4a5358;">Depart-after; add arrive-by post-v1</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Reverse persistence</td><td style="padding:8px 10px;color:#4a5358;">Persist on card</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Auto/device theme</td><td style="padding:8px 10px;color:#4a5358;">Add, default to device</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Static GTFS vs real-time (RT)</td><td style="padding:8px 10px;color:#4a5358;">Static for v1</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Transfers (connection at Union)</td><td style="padding:8px 10px;color:#4a5358;">Out of v1</td></tr>
+<tr style="border-bottom:1px solid #eceeef;"><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Amenity icon set + feed source</td><td style="padding:8px 10px;color:#4a5358;">Define before build</td></tr>
+<tr><td style="padding:8px 10px;color:#b9c0c4;">☐</td><td style="padding:8px 10px;">Sign off all §09 edge-state designs</td><td style="padding:8px 10px;color:#4a5358;">Required before build</td></tr>
+</tbody>
+</table>
+
+<div style="margin-top:34px;padding-top:18px;border-top:1px solid #e4e7e9;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+  <div style="font-size:12px;color:#9aa1a5;">GO Schedule PWA · Design Specification · v1 draft</div>
+  <div style="font-size:12px;color:#9aa1a5;">Companion file: <code style="font-family:ui-monospace,Menlo,monospace;font-size:11px;">GO Schedule.dc.html</code> (interactive reference)</div>
+</div>
+
+</td></tr></tbody>
+<tfoot><tr><td class="ftr-space"></td></tr></tfoot>
+</table>
+</main>
+</x-dc>
+</body>
+</html>
