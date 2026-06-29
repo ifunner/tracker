@@ -34,6 +34,13 @@ Output (uncompressed; GitHub Pages gzips on the wire, so ~6× smaller over HTTPS
 - `trips-s1.json … trips-sN.json` (~50–90 KB each) — one file per distinct
   **schedule variant**, each an array of
   `{ line, dir, headsign, stops: [[stopId, departMinutes], ...] }`.
+- `bus.json` (only when the feed has bus routes) — `{ busDepartures }`, a
+  per-rail-station **bus connections board**:
+  `busDepartures[stationId][weekday|saturday|sunday] = [[line, headsign, dir, departMinutes], ...]`.
+  Only bus departures that occur **at a rail station** are kept (bus-bay stops are
+  matched to the rail station via `parent_station`), grouped by day-type using the
+  busiest representative service date. `index.json.meta.hasBus` flags its presence,
+  and referenced bus lines are added to `lines` with `type: "bus"`.
 
 **Times are minutes after midnight**; GTFS times past midnight (e.g. `25:30`) are
 preserved as `1530`, not wrapped. Convert back: `const h = Math.floor(m/60)%24, min = m%60`.
@@ -80,11 +87,16 @@ Also in v1: holiday- and season-aware schedules (per-date calendar), a
 chips, a Settings sheet (Auto/Dark/Light theme, 24-hour time), and a real
 install button (Android/Chrome) with iOS Add-to-Home-Screen guidance.
 
+Buses (partial): a read-only **connecting-buses board** shows the next bus
+departures at a rail station on the trip detail screen, and lines carry a
+train/bus mode icon. This indexes only bus departures that occur at rail
+stations (not the ~85k full bus trips), so payload stays small.
+
 Deliberately out of v1 (see `GO Schedule - Design Spec.dc.html` §12):
 
 - **Transfers / connections at Union** — cross-line searches show a "no direct trips" state.
 - **Real-time delays (GTFS-RT)** — times are scheduled only.
-- **Buses** — the feed has ~85k bus trips; only the 7 rail lines are indexed.
+- **Full bus trip planning** — buses are a station departures board only, not origin→destination routable.
 
 ## Updating the schedule when a new feed drops
 

@@ -12,6 +12,7 @@ const state = {
   themeMode: LS.get('themeMode', 'auto'),   // 'auto' | 'dark' | 'light'
   theme: 'dark',                            // effective theme (computed)
   use24: LS.get('use24', false),
+  modeFilter: LS.get('modeFilter', 'both'),   // 'both' | 'train' | 'bus'
   settingsOpen: false,
   saved: LS.get('saved', []),            // route favourites: [{o, d}] of stop ids
   pins: LS.get('pins', []),              // pinned departures: [{o, d, line, dayType, depMin}]
@@ -96,6 +97,15 @@ function mix(hex, t) {
 function lineColor(code) { return (DATA.lines[code] || {}).color || '#777'; }
 function lineDisp(code) { const c = lineColor(code); return state.theme === 'dark' ? mix(c, 0.34) : c; }
 function lineName(code) { return (DATA.lines[code] || {}).long || code; }
+function lineMode(code) { return (DATA.lines[code] || {}).type === 'bus' ? 'bus' : 'train'; }
+function showTrains() { return state.modeFilter !== 'bus'; }
+function showBuses() { return state.modeFilter !== 'train'; }
+// Small inline glyph distinguishing rail vs bus services (uses currentColor).
+function modeIcon(mode) {
+  const train = '<path d="M12 2c-4 0-8 .5-8 4v9.5A3.5 3.5 0 0 0 7.5 19L6 20.5V21h2.5l1.5-1.5h4L15.5 21H18v-.5L16.5 19A3.5 3.5 0 0 0 20 15.5V6c0-3.5-4-4-8-4ZM7.5 17A1.5 1.5 0 1 1 9 15.5 1.5 1.5 0 0 1 7.5 17ZM11 11H6V6h5Zm2 0V6h5v5Zm3.5 6a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5Z"/>';
+  const bus = '<path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4S4 2.5 4 6Zm3.5 1A1.5 1.5 0 1 1 9 15.5 1.5 1.5 0 0 1 7.5 17Zm9 0a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5ZM18 11H6V6h12Z"/>';
+  return `<svg class="mode-ic" viewBox="0 0 24 24" aria-hidden="true">${mode === 'bus' ? bus : train}</svg>`;
+}
 
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function shortName(id) {
@@ -241,12 +251,15 @@ function settingsSheet() {
   if (!state.settingsOpen) return '';
   const m = state.themeMode;
   const seg = (mode, label) => `<button class="${m === mode ? 'on' : ''}" data-act="setTheme" data-mode="${mode}">${label}</button>`;
+  const mf = state.modeFilter;
+  const segMode = (mode, label) => `<button class="${mf === mode ? 'on' : ''}" data-act="setMode" data-mode="${mode}">${label}</button>`;
   const valid = (DATA.meta && DATA.meta.feedStart)
     ? `Schedule valid ${fmtFeedDate(DATA.meta.feedStart)} – ${fmtFeedDate(DATA.meta.feedEnd)}` : '';
   return `<div class="sheet-backdrop" data-act="closeSettings"></div>
     <div class="sheet" role="dialog" aria-label="Settings">
       <div class="sheet-head"><div class="t">Settings</div><button class="x" data-act="closeSettings" aria-label="Close">×</button></div>
       <div class="set-row"><div class="set-label">Appearance</div><div class="seg3">${seg('auto', 'Auto')}${seg('dark', 'Dark')}${seg('light', 'Light')}</div></div>
+      <div class="set-row"><div class="txt"><div class="set-label">Services</div><div class="set-sub">Show trains, buses, or both</div></div><div class="seg3">${segMode('both', 'Both')}${segMode('train', 'Train')}${segMode('bus', 'Bus')}</div></div>
       <button class="set-row toggle" data-act="toggle24" aria-pressed="${state.use24}">
         <div class="txt"><div class="set-label">24-hour time</div><div class="set-sub">Show 17:30 instead of 5:30 PM</div></div>
         <div class="switch ${state.use24 ? 'on' : ''}"><div class="knob"></div></div></button>
@@ -507,12 +520,12 @@ function selectedFromDate() {
 function resultsScreen() {
   const o = state.origin, d = state.dest;
   const from = selectedFromDate();
-  const deps = searchPair(o, d, from, 9);
+  const deps = showTrains() ? searchPair(o, d, from, 9) : [];
   const code = deps[0] ? deps[0].line : commonLine(o, d);
-  const ctx = 'After ' + fmtTime(from.getTime()) + ' · ' + lineName(code);
+  const ctx = showTrains() ? ('After ' + fmtTime(from.getTime()) + ' · ' + lineName(code)) : 'Bus connections';
   const saved = state.saved.some((t) => t.o === o && t.d === d);
-  let list;
-  if (!deps.length) {
+  let list = '';
+  if (showTrains() && !deps.length) {
     const co = (DATA.byId[o] || {}), cd = (DATA.byId[d] || {});
     const sameLine = (co.lines || []).some((x) => (cd.lines || []).includes(x));
     list = `<div class="empty"><div class="box">⤫</div>
@@ -536,7 +549,7 @@ function resultsScreen() {
         <div class="bar" style="background:${lineDisp(h.line)}"></div>
         <div class="mid">
           <div class="times"><span class="dep">${fmtTime(h.depAbs)}</span><span class="to">→</span><span class="arr">${fmtTime(h.arrAbs)}</span></div>
-          <div class="info"><span class="badge sm" style="background:${lineColor(h.line)}">${h.line}</span>
+          <div class="info"><span class="badge sm" style="background:${lineColor(h.line)}">${h.line}</span>${modeIcon(lineMode(h.line))}
             <span class="hs">To ${esc(cleanHeadsign(h.trip.headsign) || shortName(h.trip.stops[h.trip.stops.length - 1][0]))}</span>
             <span class="stops">· ${stopsLabel}</span></div>
         </div>
@@ -548,13 +561,46 @@ function resultsScreen() {
       </div>`;
     }).join('');
   }
-  const saveBtn = deps.length ? `<button class="route-save ${saved ? 'on' : ''}" data-act="toggleSaveRoute" data-o="${o}" data-d="${d}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save this route'}"><span class="ic">${saved ? '★' : '☆'}</span>${saved ? 'Saved' : 'Save'}</button>` : '';
+  if (state.modeFilter === 'bus') {
+    const boards = busBoardHtml(o, 'Buses from ' + shortName(o)) + busBoardHtml(d, 'Buses from ' + shortName(d));
+    list = boards || `<div class="empty"><div class="box">${modeIcon('bus')}</div>
+      <div class="h">No bus connections</div>
+      <div class="p">${DATA.busDepartures ? 'No buses serve these stations in the schedule.' : 'Bus data hasn\u2019t been added to this app yet — rebuild with the GTFS feed to enable it.'}</div>
+      <button class="btn-primary" data-act="goSearch">Edit search</button></div>`;
+  }
+  const saveBtn = (showTrains() && deps.length) ? `<button class="route-save ${saved ? 'on' : ''}" data-act="toggleSaveRoute" data-o="${o}" data-d="${d}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save this route'}"><span class="ic">${saved ? '★' : '☆'}</span>${saved ? 'Saved' : 'Save'}</button>` : '';
   return `<div class="screen">
     <div class="pushhead"><button class="back" data-act="back" aria-label="Back">←</button>
       <div class="ttl"><div class="od">${esc(shortName(o))} <span class="arr">→</span> ${esc(shortName(d))}</div><div class="ctx">${ctx}</div></div>
       ${saveBtn}</div>
     <div class="res-list" data-scroll="results">${list}</div>
   </div>`;
+}
+
+// Informational "connecting buses" board for a rail station. Renders nothing
+// unless bus departure data (data/bus.json) has been loaded for that station.
+function busBoardHtml(stationId, title) {
+  const bd = DATA.busDepartures && DATA.busDepartures[stationId];
+  if (!bd) return '';
+  const collect = (dayOffset) => {
+    const day = new Date(state.now); day.setDate(day.getDate() + dayOffset);
+    const dt = dayTypeOf(day);
+    const base = startOfDay(day.getTime()).getTime();
+    return (bd[dt] || []).map(([line, hs, dir, m]) => ({ line, hs, dir, depAbs: base + m * 60000 }));
+  };
+  let items = collect(0).filter((x) => x.depAbs >= state.now - 60000);
+  if (items.length < 4) items = items.concat(collect(1));
+  items.sort((a, b) => a.depAbs - b.depAbs);
+  items = items.slice(0, 8);
+  if (!items.length) return '';
+  const rows = items.map((x) => `<div class="bus-row">
+    <span class="badge sm" style="background:${lineColor(x.line)}">${esc(x.line)}</span>
+    <span class="bus-hs">${esc(cleanHeadsign(x.hs) || lineName(x.line) || 'Bus')}</span>
+    <span class="bus-tm"><span class="t">${fmtTime(x.depAbs)}</span> <span class="in" data-live="in" data-dep="${x.depAbs}">${inLabel(x.depAbs)}</span></span>
+  </div>`).join('');
+  const heading = title || ('Connecting buses at ' + shortName(stationId));
+  return `<div class="section-label" style="margin-left:0">${modeIcon('bus')} ${esc(heading)}</div>
+    <div class="bus-board">${rows}</div>`;
 }
 
 function detailScreen() {
@@ -587,7 +633,7 @@ function detailScreen() {
       <button class="route-save ${pinned ? 'on' : ''}" data-act="togglePin" ${pinData} aria-pressed="${pinned}" aria-label="${pinned ? 'Unpin departure' : 'Pin departure'}"><span class="ic">${pinned ? '★' : '☆'}</span>${pinned ? 'Pinned' : 'Pin'}</button></div>
     <div class="detail-scroll" data-scroll="detail">
       <div class="detail-card">
-        <div class="detail-line"><span class="badge sm" style="background:${lineColor(code)}">${code}</span><span class="nm">${esc(lineName(code))}</span>
+        <div class="detail-line"><span class="badge sm" style="background:${lineColor(code)}">${code}</span>${modeIcon(lineMode(code))}<span class="nm">${esc(lineName(code))}</span>
           <span class="detail-in" data-live="in" data-dep="${h.depAbs}">${inLabel(h.depAbs)}</span></div>
         <div class="detail-od">
           <div><div class="t">${fmtTime(h.depAbs)}</div><div class="s">${esc(shortName(o))}</div></div>
@@ -599,6 +645,7 @@ function detailScreen() {
       <div class="amenities">${amenHtml}</div>
       <div class="section-label" style="margin-left:0">Stops</div>
       <div class="timeline"><div class="spine" style="background:${accent}"></div>${stops}</div>
+      ${showBuses() ? busBoardHtml(d) : ''}
     </div>
   </div>`;
 }
@@ -705,6 +752,7 @@ const handlers = {
   openSettings() { state.settingsOpen = true; render(); },
   closeSettings() { state.settingsOpen = false; render(); },
   setTheme(el) { state.themeMode = el.dataset.mode; save('themeMode'); applyTheme(); render(); },
+  setMode(el) { state.modeFilter = el.dataset.mode; save('modeFilter'); render(); },
   toggle24() { state.use24 = !state.use24; save('use24'); render(); },
   setToday() { const d = new Date(state.now); state.dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); state.timeStr = pad(d.getHours()) + ':' + pad(d.getMinutes()); state.leaveNow = false; render(); },
   setTomorrow() { const d = new Date(state.now); d.setDate(d.getDate() + 1); state.dateStr = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); state.timeStr = '00:00'; state.leaveNow = false; render(); },
@@ -810,6 +858,13 @@ async function boot() {
     const loaded = await Promise.all(keys.map((k) => fetch('data/trips-' + k + '.json').then((r) => r.json()).catch(() => [])));
     keys.forEach((k, i) => { DATA.schedules[k] = loaded[i]; });
     buildLineStations();
+
+    // Optional bus connections board (absent until build-index.js emits it).
+    if (idx.hasBus) {
+      fetch('data/bus.json').then((r) => r.json())
+        .then((b) => { DATA.busDepartures = b.busDepartures || b; if (state.screen === 'detail') render(); })
+        .catch(() => {});
+    }
 
     // seed a sensible default search if user has none saved yet
     const d = new Date();

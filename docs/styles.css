@@ -269,6 +269,19 @@ input[type=date], input[type=time] { color-scheme:dark; }
 .stop .nm { }
 .stop .tm { font-family:var(--num); font-size:15px; font-weight:600; color:var(--text-2); white-space:nowrap; }
 
+/* ---- mode icon + bus board --------------------------------------------- */
+.mode-ic { width:14px; height:14px; flex:none; fill:currentColor; color:var(--text-3); vertical-align:-2px; }
+.detail-line .mode-ic { color:var(--text-2); }
+.bus-board { margin-bottom:22px; }
+.bus-row { display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--line); }
+.bus-row:last-child { border-bottom:none; }
+.bus-row .bus-hs { flex:1; min-width:0; font-size:14px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bus-row .bus-tm { flex:none; text-align:right; display:flex; flex-direction:column; align-items:flex-end; }
+.bus-row .bus-tm .t { font-family:var(--num); font-size:15px; font-weight:600; }
+.bus-row .bus-tm .in { font-size:11px; color:var(--accent); font-weight:700; font-family:var(--num); }
+.section-label .mode-ic { color:var(--text-3); margin-right:2px; }
+.empty .box .mode-ic { width:34px; height:34px; color:var(--accent); vertical-align:0; }
+
 /* ---- tab bar ----------------------------------------------------------- */
 .tabbar {
   flex:none; height:calc(74px + var(--safe-bottom)); padding-bottom:var(--safe-bottom);

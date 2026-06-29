@@ -111,46 +111,59 @@ function dayTypeOf(ymd) {
 async function main() {
   console.log(`Reading GTFS from "${SRC}" -> "${OUT}"`);
 
-  // 1. Rail routes only (route_type === '2'). Key by route_id.
+  // 1. Routes. Rail (route_type 2) drives trip planning; bus (route_type 3)
+  //    is kept only to build a connecting-departures board at rail stations.
   const routes = readCsv('routes.txt');
   const railRoutes = new Map(); // route_id -> { code, long, color, textColor }
-  const lines = {};             // code -> line meta
+  const busRoutes = new Map();  // route_id -> { code, long, color, textColor }
+  const lines = {};             // code -> line meta (rail; used bus lines added later)
   for (const r of routes) {
-    if (r.route_type !== '2') continue;
-    const code = r.route_short_name;
-    railRoutes.set(r.route_id, {
-      code,
+    const meta = {
+      code: r.route_short_name || r.route_long_name || r.route_id,
       long: r.route_long_name,
-      color: '#' + (r.route_color || '777777'),
-      textColor: '#' + (r.route_text_color || 'FFFFFF'),
-    });
-    lines[code] = {
-      id: code,
-      short: code,
-      long: r.route_long_name,
-      type: 'train',
       color: '#' + (r.route_color || '777777'),
       textColor: '#' + (r.route_text_color || 'FFFFFF'),
     };
+    if (r.route_type === '2') {
+      railRoutes.set(r.route_id, meta);
+      lines[meta.code] = { id: meta.code, short: meta.code, long: meta.long, type: 'train', color: meta.color, textColor: meta.textColor };
+    } else if (r.route_type === '3') {
+      busRoutes.set(r.route_id, meta);
+    }
   }
   console.log(`  rail lines: ${Object.keys(lines).join(', ')}`);
+  console.log(`  bus routes: ${busRoutes.size}`);
 
   // 2. Rail trips. Count trips per service_id to pick a representative date.
   const trips = readCsv('trips.txt');
   const tripMeta = new Map();        // trip_id -> { code, service, headsign, dir }
   const svcCount = new Map();        // service_id -> rail trip count
+  const busTripMeta = new Map();     // trip_id -> { code, service, headsign, dir }
+  const busSvcCount = new Map();     // service_id -> bus trip count
   for (const t of trips) {
     const route = railRoutes.get(t.route_id);
-    if (!route) continue;
-    tripMeta.set(t.trip_id, {
-      code: route.code,
-      service: t.service_id,
-      headsign: t.trip_headsign || '',
-      dir: +(t.direction_id || 0),
-    });
-    svcCount.set(t.service_id, (svcCount.get(t.service_id) || 0) + 1);
+    if (route) {
+      tripMeta.set(t.trip_id, {
+        code: route.code,
+        service: t.service_id,
+        headsign: t.trip_headsign || '',
+        dir: +(t.direction_id || 0),
+      });
+      svcCount.set(t.service_id, (svcCount.get(t.service_id) || 0) + 1);
+      continue;
+    }
+    const broute = busRoutes.get(t.route_id);
+    if (broute) {
+      busTripMeta.set(t.trip_id, {
+        code: broute.code,
+        service: t.service_id,
+        headsign: t.trip_headsign || '',
+        dir: +(t.direction_id || 0),
+      });
+      busSvcCount.set(t.service_id, (busSvcCount.get(t.service_id) || 0) + 1);
+    }
   }
-  console.log(`  rail trips: ${tripMeta.size}`);
+  console.log(`  rail trips: ${tripMeta.size}   bus trips: ${busTripMeta.size}`);
 
   // 3. Feed window. In this feed service_id === a YYYYMMDD date, so the set of
   //    trips actually depends on the date (spring vs summer schedule, holidays).
@@ -199,7 +212,9 @@ async function main() {
   } catch (e) { console.warn('  (no stop_amenities.txt)'); }
 
   const stopInfo = new Map();
+  const parentOf = {}; // stop_id -> parent_station (for matching bus bays to stations)
   for (const s of readCsv('stops.txt')) {
+    parentOf[s.stop_id] = s.parent_station || '';
     if (!usedStops.has(s.stop_id)) continue;
     stopInfo.set(s.stop_id, {
       id: s.stop_id,
@@ -213,6 +228,43 @@ async function main() {
       lines: [],
     });
   }
+
+  // 5b. Bus connections board. Buses board at a station's bus-bay stop ids, which
+  //     share a parent_station with the rail platform. Resolve both to a canonical
+  //     station id, then keep only the bus departures that occur at a rail station.
+  const canon = (id) => parentOf[id] || id;
+  const railCanonToStation = new Map(); // canonical station -> rail station output id
+  for (const id of usedStops) { const c = canon(id); if (!railCanonToStation.has(c)) railCanonToStation.set(c, id); }
+
+  // Representative bus service per day-type = the in-window date with the most bus trips.
+  const inWindow = (s) => /^\d{8}$/.test(s) && s >= feedStart && s <= feedEnd;
+  const bestBus = { weekday: [null, -1], saturday: [null, -1], sunday: [null, -1] };
+  for (const [svc, n] of busSvcCount) {
+    if (!inWindow(svc)) continue;
+    const dt = dayTypeOf(svc);
+    if (n > bestBus[dt][1]) bestBus[dt] = [svc, n];
+  }
+  const repBusByService = new Map(); // service_id -> dayType
+  for (const dt of ['weekday', 'saturday', 'sunday']) if (bestBus[dt][0]) repBusByService.set(bestBus[dt][0], dt);
+  const keepBusTrips = new Map();    // trip_id -> { code, headsign, dir, dt }
+  for (const [id, m] of busTripMeta) {
+    const dt = repBusByService.get(m.service);
+    if (dt) keepBusTrips.set(id, { code: m.code, headsign: m.headsign, dir: m.dir, dt });
+  }
+
+  const busDepRecords = []; // { station, dt, line, headsign, dir, depMin }
+  if (keepBusTrips.size) {
+    await streamCsv('stop_times.txt', (r) => {
+      const m = keepBusTrips.get(r.trip_id);
+      if (!m) return;
+      const station = railCanonToStation.get(canon(r.stop_id));
+      if (!station) return;
+      const dep = toMinutes(r.departure_time || r.arrival_time);
+      if (dep === null) return;
+      busDepRecords.push({ station, dt: m.dt, line: m.code, headsign: m.headsign, dir: m.dir, depMin: dep });
+    });
+  }
+  console.log(`  bus departures at rail stations: ${busDepRecords.length}`);
 
   // 6. Build the canonical trip list for each service date, and record which
   //    lines serve each station (union across all dates).
@@ -283,6 +335,28 @@ async function main() {
   }
   stations.sort((a, b) => a.name.localeCompare(b.name));
 
+  // 6d. Assemble the per-station bus board and the bus lines it references.
+  const busDepartures = {}; // stationId -> { weekday|saturday|sunday: [[line, headsign, dir, depMin], ...] }
+  const usedBusLines = new Set();
+  for (const rec of busDepRecords) {
+    const st = busDepartures[rec.station] || (busDepartures[rec.station] = { weekday: [], saturday: [], sunday: [] });
+    st[rec.dt].push([rec.line, rec.headsign, rec.dir, rec.depMin]);
+    usedBusLines.add(rec.line);
+  }
+  for (const st of Object.values(busDepartures)) {
+    for (const dt of ['weekday', 'saturday', 'sunday']) {
+      const seen = new Set();
+      st[dt] = st[dt]
+        .filter((x) => { const k = x[0] + '|' + x[3] + '|' + x[1]; if (seen.has(k)) return false; seen.add(k); return true; })
+        .sort((a, b) => a[3] - b[3]);
+    }
+  }
+  for (const [, br] of busRoutes) {
+    if (!usedBusLines.has(br.code) || lines[br.code]) continue;
+    lines[br.code] = { id: br.code, short: br.code, long: br.long, type: 'bus', color: br.color, textColor: br.textColor };
+  }
+  const hasBus = Object.keys(busDepartures).length > 0;
+
   // 7. Write output.
   fs.mkdirSync(OUT, { recursive: true });
   const variantKeys = Object.keys(variants);
@@ -292,12 +366,15 @@ async function main() {
     feedStart, feedEnd,
     stationCount: stations.length,
     variantCount: variantKeys.length,
+    hasBus,
+    busStationCount: Object.keys(busDepartures).length,
   };
   const index = { meta, variants: variantKeys, defaults, calendar, lines, stations };
   fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify(index));
   for (const key of variantKeys) {
     fs.writeFileSync(path.join(OUT, `trips-${key}.json`), JSON.stringify(variants[key]));
   }
+  if (hasBus) fs.writeFileSync(path.join(OUT, 'bus.json'), JSON.stringify({ busDepartures }));
 
   // Report.
   const kb = (f) => (fs.statSync(path.join(OUT, f)).size / 1024).toFixed(1) + ' KB';
@@ -309,6 +386,10 @@ async function main() {
   for (const key of variantKeys) {
     console.log(`  trips-${key}.json`.padEnd(22) + `${kb(`trips-${key}.json`)}  (${variants[key].length} trips)`);
     total += +kb(`trips-${key}.json`).split(' ')[0];
+  }
+  if (hasBus) {
+    console.log(`  bus.json`.padEnd(22) + `${kb('bus.json')}  (${Object.keys(busDepartures).length} stations w/ bus connections)`);
+    total += +kb('bus.json').split(' ')[0];
   }
   console.log(`  total payload: ${total.toFixed(1)} KB`);
   console.log('\nDone.');
