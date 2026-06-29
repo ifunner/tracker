@@ -237,7 +237,15 @@ function toast(msg) {
 function statusbar() {
   const isDark = state.theme === 'dark';
   return `<div class="statusbar">
-    <div class="clock" data-live="clock">${fmtTime(state.now)}</div>
+    <div class="brand" aria-label="Tracker">
+      <svg class="brand-mark" viewBox="0 0 12 30" aria-hidden="true">
+        <rect class="rail" x="4.5" y="2.5" width="3" height="25" rx="1.5"/>
+        <circle class="rail" cx="6" cy="3.5" r="2.4"/>
+        <circle class="rail" cx="6" cy="26.5" r="2.4"/>
+        <circle class="live" cx="6" cy="12" r="3.8"/>
+      </svg>
+      <span class="brand-name">Tracker</span>
+    </div>
     <div class="right">
       <button class="theme-btn" data-act="toggleTheme" aria-label="Toggle theme">
         ${isDark ? '<div class="moon"></div>' : '<div class="sun"></div>'}
@@ -888,7 +896,7 @@ async function boot() {
     }
   } catch (e) {
     document.getElementById('app').innerHTML =
-      '<div class="boot"><div class="boot-logo">GO</div><div class="boot-msg">Couldn\'t load the schedule.<br>Try refreshing.</div></div>';
+      '<div class="boot"><div class="splash-name" style="font-size:34px">Tracker</div><div class="splash-tag">Couldn\'t load the schedule. Try refreshing.</div></div>';
     console.error(e);
   }
 }

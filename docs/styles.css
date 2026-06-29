@@ -4,6 +4,7 @@
   --line:rgba(255,255,255,.085);
   --text:#eef1f2; --text-2:#9aa3a8; --text-3:#646e74;
   --accent:#1aa84e;
+  --live:#1aa84e; --rail:#39424a;
   --font:'Public Sans',system-ui,-apple-system,sans-serif;
   --num:'Barlow Semi Condensed','Public Sans',sans-serif;
   --safe-top:env(safe-area-inset-top,0px);
@@ -13,6 +14,7 @@
   --page:#c9cdcf; --bg:#eef0f1; --surface:#ffffff; --surface-2:#eceef0;
   --line:rgba(0,0,0,.09);
   --text:#13181b; --text-2:#5a646a; --text-3:#949ca1; --accent:#00853e;
+  --rail:#cdd3d6;
 }
 
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -40,14 +42,33 @@ input[type=date], input[type=time] { color-scheme:dark; }
   background:var(--bg);
 }
 
-/* ---- boot --------------------------------------------------------------- */
-.boot { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:40px; }
+/* ---- boot / splash ------------------------------------------------------ */
+.boot { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:40px; position:relative; background:var(--bg); }
+.splash-mark { width:64px; height:132px; margin-bottom:24px; }
+.splash-mark svg { width:100%; height:100%; overflow:visible; display:block; }
+.splash-mark .rail { fill:var(--rail); }
+.splash-mark .ring { fill:none; stroke:rgba(26,168,78,.18); stroke-width:2; }
+.splash-mark .ring2 { fill:none; stroke:rgba(26,168,78,.32); stroke-width:2; }
+.splash-mark .glow { fill:rgba(26,168,78,.20); }
+.splash-mark .live { fill:var(--live); transform-box:fill-box; transform-origin:center; animation:livePulse 1.8s ease-in-out infinite; }
+@keyframes livePulse { 0%,100% { opacity:.78; } 50% { opacity:1; } }
+.splash-name { font-family:var(--num); font-weight:700; font-size:42px; letter-spacing:-.8px; color:var(--text); line-height:1; }
+.splash-tag { font-size:13px; color:var(--text-2); font-weight:500; margin-top:10px; }
+.splash-foot { position:absolute; bottom:calc(30px + var(--safe-bottom)); font-size:11px; color:var(--text-3); }
+/* legacy boot fallback */
 .boot-logo {
   width:64px; height:64px; border-radius:18px; background:var(--accent); color:#fff;
   font-family:var(--num); font-weight:700; font-size:28px; letter-spacing:.5px;
   display:flex; align-items:center; justify-content:center;
 }
 .boot-msg { color:var(--text-2); font-size:14px; font-weight:500; }
+
+/* ---- brand lockup (status bar) ------------------------------------------ */
+.statusbar .brand { display:flex; align-items:center; gap:8px; }
+.brand-mark { width:12px; height:30px; flex:none; overflow:visible; }
+.brand-mark .rail { fill:var(--rail); }
+.brand-mark .live { fill:var(--live); filter:drop-shadow(0 0 5px rgba(26,168,78,.55)); }
+.brand-name { font-family:var(--num); font-weight:700; font-size:20px; letter-spacing:-.4px; color:var(--text); line-height:1; }
 
 /* ---- status bar -------------------------------------------------------- */
 .statusbar {
