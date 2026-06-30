@@ -212,9 +212,9 @@ async function main() {
   } catch (e) { console.warn('  (no stop_amenities.txt)'); }
 
   const stopInfo = new Map();
-  const parentOf = {}; // stop_id -> parent_station (for matching bus bays to stations)
+  const allStopGeo = new Map(); // stop_id -> { name, lat, lon } (for bus -> station matching)
   for (const s of readCsv('stops.txt')) {
-    parentOf[s.stop_id] = s.parent_station || '';
+    allStopGeo.set(s.stop_id, { name: s.stop_name, lat: +s.stop_lat, lon: +s.stop_lon });
     if (!usedStops.has(s.stop_id)) continue;
     stopInfo.set(s.stop_id, {
       id: s.stop_id,
@@ -229,12 +229,41 @@ async function main() {
     });
   }
 
-  // 5b. Bus connections board. Buses board at a station's bus-bay stop ids, which
-  //     share a parent_station with the rail platform. Resolve both to a canonical
-  //     station id, then keep only the bus departures that occur at a rail station.
-  const canon = (id) => parentOf[id] || id;
-  const railCanonToStation = new Map(); // canonical station -> rail station output id
-  for (const id of usedStops) { const c = canon(id); if (!railCanonToStation.has(c)) railCanonToStation.set(c, id); }
+  // 5b. Bus connections board. In this feed bus stops are their own points with no
+  //     parent_station, so map each bus stop to a rail station by name and/or
+  //     proximity: a normalized-name match (e.g. "Oakville GO Bus" -> "Oakville GO")
+  //     within NAME_MAX metres, otherwise the nearest station within PROX_MAX metres.
+  const NAME_MAX = 600, PROX_MAX = 250;
+  const railStations = [...stopInfo.values()]; // every used stop is a rail stop
+  const stById = new Map(railStations.map((s) => [s.id, s]));
+  const hav = (la1, lo1, la2, lo2) => {
+    const R = 6371000, t = Math.PI / 180;
+    const dLa = (la2 - la1) * t, dLo = (lo2 - lo1) * t;
+    const x = Math.sin(dLa / 2) ** 2 + Math.cos(la1 * t) * Math.cos(la2 * t) * Math.sin(dLo / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  };
+  const normName = (n) => (n || '').toLowerCase()
+    .replace(/\s+go\s+bus.*$/, '').replace(/\s+bus\s+terminal.*$/, '')
+    .replace(/\s+go\s+station.*$/, '').replace(/\s+go$/, '').replace(/[^a-z0-9]/g, '');
+  const stByName = new Map();
+  for (const s of railStations) stByName.set(normName(s.name), s.id);
+  const nearestStation = (lat, lon) => {
+    let best = null, bd = Infinity;
+    for (const s of railStations) { const d = hav(lat, lon, s.lat, s.lon); if (d < bd) { bd = d; best = s; } }
+    return [best, bd];
+  };
+  const busStopToStation = new Map(); // bus stop_id -> rail station id
+  for (const [sid, g] of allStopGeo) {
+    if (stopInfo.has(sid)) continue; // skip rail platform stops themselves
+    if (!Number.isFinite(g.lat) || !Number.isFinite(g.lon)) continue;
+    const namedId = stByName.get(normName(g.name));
+    if (namedId) {
+      const ns = stById.get(namedId);
+      if (ns && hav(g.lat, g.lon, ns.lat, ns.lon) <= NAME_MAX) { busStopToStation.set(sid, namedId); continue; }
+    }
+    const [near, nd] = nearestStation(g.lat, g.lon);
+    if (near && nd <= PROX_MAX) busStopToStation.set(sid, near.id);
+  }
 
   // Representative bus service per day-type = the in-window date with the most bus trips.
   const inWindow = (s) => /^\d{8}$/.test(s) && s >= feedStart && s <= feedEnd;
@@ -257,7 +286,7 @@ async function main() {
     await streamCsv('stop_times.txt', (r) => {
       const m = keepBusTrips.get(r.trip_id);
       if (!m) return;
-      const station = railCanonToStation.get(canon(r.stop_id));
+      const station = busStopToStation.get(r.stop_id);
       if (!station) return;
       const dep = toMinutes(r.departure_time || r.arrival_time);
       if (dep === null) return;

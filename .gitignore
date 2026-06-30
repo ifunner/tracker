@@ -1,0 +1,7 @@
+# Raw Metrolinx GTFS feed — large source data, not needed in the repo.
+# Rebuild docs/data/ from it with: node build-index.js "GO-GTFS Files" docs/data
+GO-GTFS Files/
+
+# OS / editor cruft
+.DS_Store
+node_modules/

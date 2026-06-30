@@ -324,7 +324,7 @@ function cardHtml(trip) {
     <div class="hero-row" data-act="openDetail" role="button" tabindex="0" data-o="${o}" data-d="${d}" data-dep="${soonest.depAbs}">
       <div class="hero-time">${fmtTime(soonest.depAbs)}</div>
       <div class="hero-meta">
-        <div class="in-pill" data-live="in" data-dep="${soonest.depAbs}">${inLabel(soonest.depAbs)}</div>
+        <div class="in-pill${isSoon(soonest.depAbs) ? ' soon' : ''}" data-live="in" data-dep="${soonest.depAbs}">${inLabel(soonest.depAbs)}</div>
         <div class="hero-sub"><span data-live="mmss" data-dep="${soonest.depAbs}">${mmss(soonest.depAbs)}</span> · arr ${fmtTime(soonest.arrAbs)} · ${soonest.duration} min</div>
       </div>
     </div>
@@ -357,7 +357,7 @@ function pinCardHtml(p) {
     <div class="hero-row">
       <div class="hero-time">${fmtTime(occ.depAbs)}</div>
       <div class="hero-meta">
-        <div class="in-pill" data-live="in" data-dep="${occ.depAbs}">${inLabel(occ.depAbs)}</div>
+        <div class="in-pill${isSoon(occ.depAbs) ? ' soon' : ''}" data-live="in" data-dep="${occ.depAbs}">${inLabel(occ.depAbs)}</div>
         <div class="hero-sub">arr ${fmtTime(occ.arrAbs)} · ${occ.duration} min</div>
       </div>
     </div>
@@ -401,14 +401,14 @@ function installBanner() {
   if (state.installDismissed || isStandalone()) return '';
   if (deferredPrompt) {
     return `<div class="install">
-      <div class="logo">GO</div>
+      <div class="logo"><svg class="mini-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="rail" x="11" y="3" width="2" height="18" rx="1"/><circle class="rail" cx="12" cy="4" r="1.6"/><circle class="rail" cx="12" cy="20" r="1.6"/><circle class="live" cx="12" cy="10" r="3"/></svg></div>
       <div class="body"><div class="t">Install Tracker</div><div class="s">Add to home screen · works offline</div></div>
       <div class="actions"><button class="go" data-act="doInstall">Install</button>
       <button class="x" data-act="dismissInstall" aria-label="Dismiss">×</button></div></div>`;
   }
   if (isIOS()) {
     return `<div class="install">
-      <div class="logo">GO</div>
+      <div class="logo"><svg class="mini-mark" viewBox="0 0 24 24" aria-hidden="true"><rect class="rail" x="11" y="3" width="2" height="18" rx="1"/><circle class="rail" cx="12" cy="4" r="1.6"/><circle class="rail" cx="12" cy="20" r="1.6"/><circle class="live" cx="12" cy="10" r="3"/></svg></div>
       <div class="body"><div class="t">Install Tracker</div><div class="s">Tap Share, then “Add to Home Screen”</div></div>
       <button class="x" data-act="dismissInstall" aria-label="Dismiss">×</button></div>`;
   }
@@ -846,7 +846,7 @@ function tick() {
     const kind = el.dataset.live;
     if (kind === 'clock') { el.textContent = fmtTime(state.now); return; }
     const dep = +el.dataset.dep;
-    if (kind === 'in') el.textContent = inLabel(dep);
+    if (kind === 'in') { el.textContent = inLabel(dep); if (el.classList.contains('in-pill')) el.classList.toggle('soon', isSoon(dep)); }
     else if (kind === 'mmss') el.textContent = mmss(dep);
     if (dep && Math.floor(dep / 60000) < nowMin) needFull = true;
   });
@@ -868,7 +868,7 @@ async function boot() {
     buildLineStations();
 
     // Optional bus connections board (absent until build-index.js emits it).
-    if (idx.hasBus) {
+    if (idx.meta && idx.meta.hasBus) {
       fetch('data/bus.json').then((r) => r.json())
         .then((b) => { DATA.busDepartures = b.busDepartures || b; if (state.screen === 'detail') render(); })
         .catch(() => {});

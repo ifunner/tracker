@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#00853e"/>
-  <text x="256" y="262" font-family="'Barlow Semi Condensed','Arial Narrow',sans-serif" font-weight="700"
-        font-size="190" letter-spacing="4" fill="#ffffff" text-anchor="middle" dominant-baseline="central">GO</text>
+  <rect width="512" height="512" fill="#0e1113"/>
+  <!-- mark kept within the maskable safe zone (centre ~66%) -->
+  <g transform="translate(256 256) scale(.74) translate(-256 -256)">
+    <rect x="243" y="96" width="26" height="320" rx="13" fill="#39424a"/>
+    <circle cx="256" cy="104" r="20" fill="#39424a"/>
+    <circle cx="256" cy="408" r="20" fill="#39424a"/>
+    <circle cx="256" cy="256" r="104" fill="none" stroke="#1aa84e" stroke-opacity=".18" stroke-width="10"/>
+    <circle cx="256" cy="256" r="74" fill="none" stroke="#1aa84e" stroke-opacity=".32" stroke-width="10"/>
+    <circle cx="256" cy="256" r="70" fill="#1aa84e" fill-opacity=".22"/>
+    <circle cx="256" cy="256" r="50" fill="#1aa84e"/>
+  </g>
 </svg>

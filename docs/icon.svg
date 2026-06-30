@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="115" fill="#00853e"/>
-  <text x="256" y="256" font-family="'Barlow Semi Condensed','Arial Narrow',sans-serif" font-weight="700"
-        font-size="240" letter-spacing="6" fill="#ffffff" text-anchor="middle" dominant-baseline="central">GO</text>
+  <rect width="512" height="512" rx="115" fill="#0e1113"/>
+  <rect x="3" y="3" width="506" height="506" rx="112" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="2"/>
+  <!-- route line -->
+  <rect x="243" y="96" width="26" height="320" rx="13" fill="#39424a"/>
+  <circle cx="256" cy="104" r="20" fill="#39424a"/>
+  <circle cx="256" cy="408" r="20" fill="#39424a"/>
+  <!-- live position: concentric rings + glowing dot -->
+  <circle cx="256" cy="256" r="104" fill="none" stroke="#1aa84e" stroke-opacity=".18" stroke-width="10"/>
+  <circle cx="256" cy="256" r="74" fill="none" stroke="#1aa84e" stroke-opacity=".32" stroke-width="10"/>
+  <circle cx="256" cy="256" r="70" fill="#1aa84e" fill-opacity=".22"/>
+  <circle cx="256" cy="256" r="50" fill="#1aa84e"/>
 </svg>
