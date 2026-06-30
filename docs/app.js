@@ -607,7 +607,7 @@ function busBoardHtml(stationId, title) {
     <span class="bus-tm"><span class="t">${fmtTime(x.depAbs)}</span> <span class="in" data-live="in" data-dep="${x.depAbs}">${inLabel(x.depAbs)}</span></span>
   </div>`).join('');
   const heading = title || ('Connecting buses at ' + shortName(stationId));
-  return `<div class="section-label" style="margin-left:0">${modeIcon('bus')} ${esc(heading)}</div>
+  return `<div class="section-label bus-head" style="margin-left:0">${modeIcon('bus')}${esc(heading)}</div>
     <div class="bus-board">${rows}</div>`;
 }
 
@@ -645,7 +645,7 @@ function detailScreen() {
           <span class="detail-in" data-live="in" data-dep="${h.depAbs}">${inLabel(h.depAbs)}</span></div>
         <div class="detail-od">
           <div><div class="t">${fmtTime(h.depAbs)}</div><div class="s">${esc(shortName(o))}</div></div>
-          <div class="mid"><div class="dur">${h.duration} min</div><div class="track"><div class="tri">▶</div></div></div>
+          <div class="mid"><div class="track"></div><div class="dur">${h.duration} min</div></div>
           <div style="text-align:right"><div class="t">${fmtTime(h.arrAbs)}</div><div class="s">${esc(shortName(d))}</div></div>
         </div>
       </div>
